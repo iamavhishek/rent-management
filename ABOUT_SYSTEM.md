@@ -1,85 +1,532 @@
-# Rent Bill Maker - System Overview & Architecture
+# Rent Bill Maker - Complete System Reference
 
-Rent Bill Maker is a premium rental management application designed to help landlords manage properties, tenants, and generate professional rent bills with ease. It supports both **Gregorian (AD)** and **Bikram Sambat (BS)** calendar systems throughout the entire application.
+## Project Overview
 
-## 🚀 Core Features
+Flutter (Material 3) rental management app for Nepali landlords. Tracks properties, tenants, and generates rent bills. Supports both **Gregorian (AD)** and **Bikram Sambat (BS, Nepali)** calendars throughout the UI. Local-language (Nepali/Nepali Romanized) and English toggle. All data persisted in local Hive CE storage. No backend.
 
-- **Property Management**: Track rooms, flats, and shops.
-- **Tenant Tracking**: Manage active/inactive tenants and move-out dates.
-- **Dynamic Billing**: Create bills with fixed rent and dynamic utility charges (Electricity/Water units).
-- **Dual Calendar System**: Native support for Nepali (BS) and English (AD) dates.
-- **Professional Reports**: Monthly and yearly financial analytics (Billed vs. Collected).
-- **PDF Generation**: Generate and share professional rent receipts.
+**Version**: 1.0.0+1 | **Min Dart SDK**: ^3.11.4
 
 ---
 
-## 📁 Directory Structure & Code Responsibilities
+## Dependencies (pubspec.yaml)
 
-### `lib/models/`
+### Runtime
+| Package | Purpose |
+|---------|---------|
+| `flutter_bloc ^9.1.1` + `nested ^1.0.0` | State management with BLoC/Cubit pattern |
+| `hive_ce_flutter ^2.3.4` | Local key-value database |
+| `freezed_annotation ^3.1.0` + `equatable ^2.0.8` | Immutable value classes with codegen |
+| `reactive_forms ^18.2.2` | Reactive form validation in create_bill_screen and add_edit_tenant_screen |
+| `nepali_date_picker ^7.0.1` + `nepali_utils ^3.0.8` | BS/AD date conversion and Nepali date picker UI |
+| `go_router ^17.1.0` | Declarative routing |
+| `google_fonts ^8.0.2` | Poppins font everywhere |
+| `pdf ^3.12.0` + `printing ^5.14.3` | PDF generation and share/print |
+| `share_plus ^12.0.2` | Share bill PDFs/images |
+| `image_picker ^1.2.1` | Pick tenant citizenship photo |
+| `qr_flutter ^4.1.0` | QR code on bills |
+| `screenshot ^3.0.0` | Capture widget screenshots for bill preview |
+| `table_calendar ^3.2.0` | Calendar UI |
+| `flutter_local_notifications ^21.0.0` + `timezone ^0.11.0` + `workmanager ^0.9.0+3` | Scheduled notifications |
+| `intl ^0.20.2` | Date formatting |
+| `uuid ^4.5.3` | Generate unique IDs |
+| `cached_network_image ^3.4.1` | Cached network images |
+| `shimmer ^3.0.0` | Loading skeleton animations |
+| `flutter_svg ^2.2.4` | SVG asset rendering |
+| `path_provider ^2.1.5` | File system paths |
+| `permission_handler ^12.0.1` | Runtime permissions |
+| `url_launcher ^6.3.2` | Open external URLs |
 
-Defines the data structures of the system.
-
-- **`bill/bill_model.dart`**: The core billing entity. Stores billing periods in AD (for consistency) and handles calculation logic for totals, discounts, and units.
-- **`property/property_model.dart`**: Stores property details (name, address, rent).
-- **`tenant/tenant_model.dart`**: Stores tenant info, move-in/out dates, and association with a property.
-
-### `lib/bloc/`
-
-Handles the business logic and state management using the BLoC/Cubit pattern.
-
-- **`bill/`**: Manages the list of bills, creation, deletion, and payment status updates.
-- **`property/`**: CRUD operations for property management.
-- **`tenant/`**: CRUD operations for tenants.
-- **`settings/settings_cubit.dart`**: Manages global user preferences, specifically the **DateSystem (AD/BS)**.
-- **`language/language_cubit.dart`**: Manages the application's locale (English/Nepali).
-
-### `lib/services/`
-
-Contains logic that doesn't belong in a BLoC or Model.
-
-- **`report_service.dart`**: The financial engine. It calculates monthly/yearly stats by matching stored data against the user's preferred calendar system. It distinguishes between "Billed Amount" (period-based) and "Collected Amount" (payment-date-based).
-
-### `lib/screens/`
-
-The UI layer of the application.
-
-- **`home_screen.dart`**: Dashboard showing quick stats and recent bills.
-- **`create_bill_screen.dart`**: Complex form for generating bills with reactive unit calculations and calendar switching.
-- **`history_screen.dart`**: Grouped list of all bills, organized by billing period.
-- **`reports_screen.dart`**: Interactive financial analytics with month/year filtering.
-- **`onboarding_screen.dart`**: First-time user setup for language and calendar preferences.
-
-### `lib/widgets/`
-
-Reusable UI components.
-
-- **`bill_card.dart`**: The primary display component for bills in lists.
-- **`bill_receipt_widget.dart`**: The visual template used for generating shareable PDFs.
-- **`stat_card.dart`**: Standardized cards for dashboard metrics.
-
-### `lib/utils/`
-
-Helper classes and constants.
-
-- **`l10n.dart`**: The localization engine. Translates keys to English/Nepali and handles month name conversions for both AD and BS.
-- **`constants.dart`**: Storage keys (Hive box names) and theme constants.
+### Dev
+`freezed ^3.2.5`, `json_serializable ^6.13.1`, `hive_ce_generator ^1.11.1`, `build_runner ^2.13.1`, `flutter_lints ^6.0.0`
 
 ---
 
-## 📅 Calendar Standardization Logic
+## Directory Structure (every file)
 
-A key technical aspect of this system is the **AD-Standard Storage** approach:
+```
+lib/
+  main.dart                          # App entry, Hive init, BLoC providers, L10n setup
+  hive_registrar.g.dart              # Generated Hive type adapters (see Hive section below)
 
-1. **Save in AD**: All dates (due dates, billing months, years) are stored as Gregorian (AD) in the database (Hive) to ensure data portability and consistent sorting.
-2. **Convert for Display**: When a user selects "BS" in Settings, the UI converts these stored AD values to Nepali dates on the fly.
-3. **Global Synchronization**: All screens (`History`, `Reports`, `Create Bill`) and components (`BillCard`) reactively sync to the global `SettingsCubit` state. Local toggles have been removed to ensure a consistent data view across the entire application.
-4. **Reactive Forms**: Form fields automatically re-validate and convert between calendar systems mid-interaction when settings change.
+  models/
+    bill/bill_model.dart             # Bill entity + PaymentStatus + DateSystem enums
+    bill/bill_model.freezed.dart     # Generated (do not edit) - copyWith, toString, etc.
+    bill/bill_model.g.dart           # Generated JSON serialization
+    property/property_model.dart     # Property entity
+    property/property_model.freezed.dart
+    property/property_model.g.dart
+    tenant/tenant_model.dart         # Tenant entity
+    tenant/tenant_model.freezed.dart
+    tenant/tenant_model.g.dart
+
+  bloc/
+    bill/bill_bloc.dart              # BillBloc - CRUD, mark paid/unpaid, overdue/pending queries
+    bill/bill_event.dart             # 11 event types
+    bill/bill_state.dart             # BillInitial, BillLoading, BillLoaded, BillError
+    language/language_cubit.dart     # LanguageCubit - toggle EN/NE, persists to Hive
+    property/property_bloc.dart      # PropertyBloc - CRUD
+    property/property_event.dart     # 5 event types
+    property/property_state.dart     # PropertyInitial, PropertyLoading, PropertyLoaded, PropertyError
+    settings/settings_cubit.dart     # SettingsCubit - AD/BS date system toggle, persists to Hive
+    tenant/tenant_bloc.dart          # TenantBloc - CRUD, GetTenantsByProperty
+    tenant/tenant_event.dart         # 6 event types
+    tenant/tenant_state.dart         # TenantInitial, TenantLoading, TenantLoaded, TenantError
+
+  screens/
+    onboarding_screen.dart           # 4-step wizard: Language -> Calendar -> Property -> Tenant
+    home_screen.dart                 # Main shell with BottomNavigationBar (Dashboard, Bills, Reports, Settings)
+    create_bill_screen.dart          # Complex reactive form for bill generation
+    history_screen.dart              # All bills grouped by year+month, with status/year filters
+    tenant_list_screen.dart          # List/search tenants, FAB to add
+    add_edit_tenant_screen.dart      # Reactive form for tenant CRUD
+    property_list_screen.dart        # List/search properties, FAB to add
+    add_edit_property_screen.dart    # Form for property CRUD
+    settings_screen.dart             # Language/Calendar toggles, nav to tenant/property lists
+    reports_screen.dart              # Monthly + yearly financial analytics with charts
+
+  widgets/
+    stat_card.dart                   # Dashboard metric card with icon + gradient background
+    bill_card.dart                   # Primary bill display in lists, handles swipe actions, receipt overlay
+    bill_receipt_widget.dart         # Receipt template for PDF/share rendering
+    bill_preview_overlay.dart        # Full-screen bill preview overlay
+
+  services/
+    report_service.dart              # Financial analytics: monthly/yearly collection stats
+    notification_service.dart        # Flutter local notifications (initialized at startup)
+
+  utils/
+    l10n.dart                        # Manual localization system (EN/NE), month names, L10n.get(key)
+    theme.dart                       # AppTheme class with full ThemeData
+    constants.dart                   # Hive box names, currency symbol (रू), app name
+```
+
+### Assets
+```
+assets/images/                       # Onboarding illustration images
+assets/icons/                        # SVG icons for dashboard stat cards
+```
 
 ---
 
-## 💾 Data Persistence
+## Data Models (complete field reference)
 
-The system uses **Hive CE**, a lightweight and lightning-fast key-value database.
+### PropertyModel (typeId: 0)
+Auto-generated with Freezed + Hive serialization.
 
-- Data is stored in "Boxes" (one for each model).
-- Type adapters (in `lib/hive_registrar.g.dart`) handle the serialization of complex objects.
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `String` | UUID v4 |
+| `name` | `String` | Property name |
+| `address` | `String` | Full address |
+| `unitNumber` | `String` | Room/flat/shop identifier |
+| `monthlyRent` | `double` | Base rent amount |
+| `securityDeposit` | `double` | Default 0 |
+| `ownerName` | `String` | Owner's full name |
+| `ownerPhone` | `String` | Owner's phone number |
+| `createdAt` | `DateTime` | |
+| `updatedAt` | `DateTime` | |
+| `isActive` | `bool` | |
+
+- `PropertyModel.create()` factory: auto-generates id, timestamps, isActive=true.
+
+### TenantModel (typeId: 1)
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `String` | UUID v4 |
+| `name` | `String` | Tenant full name |
+| `phone` | `String` | |
+| `propertyId` | `String` | Foreign key to PropertyModel.id |
+| `moveInDate` | `DateTime` | |
+| `leaseEndDate` | `DateTime?` | |
+| `citizenshipNumber` | `String` | Nepal citizenship/doc number |
+| `citizenshipImagePath` | `String?` | Picked image stored locally |
+| `createdAt` | `DateTime` | |
+| `updatedAt` | `DateTime` | |
+| `isActive` | `bool` | |
+| `electricityRate` | `double` | Default 0, per-unit rate |
+| `waterRate` | `double` | Default 0, per-unit rate |
+| `initialElectricityReading` | `double` | Default 0 |
+| `initialWaterReading` | `double` | Default 0 |
+| `leftDate` | `DateTime?` | When tenant moved out |
+| `monthlyRent` | `double` | Default 0 |
+
+- `TenantModel.create()` factory: auto-generates id, timestamps, isActive=true.
+
+### BillModel (typeId: 2)
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `String` | UUID v4 |
+| `billNumber` | `String` | Auto: `BILL-{year}-{month}-{timestamp}` |
+| `tenantId` | `String` | FK to TenantModel.id |
+| `propertyId` | `String` | FK to PropertyModel.id |
+| `month` | `int` | Billing month (1-12) |
+| `year` | `int` | Billing year (stored in AD) |
+| `rentAmount` | `double` | Base rent |
+| `electricityCharges` | `double` | |
+| `waterCharges` | `double` | |
+| `internetCharges` | `double` | |
+| `otherCharges` | `double` | |
+| `otherChargesDescription` | `String` | |
+| `discount` | `double` | |
+| `totalAmount` | `double` | Computed: rent + charges + extras - discount - deductions |
+| `paidAmount` | `double` | 0 on creation |
+| `dueDate` | `DateTime` | |
+| `status` | `PaymentStatus` | |
+| `paidDate` | `DateTime?` | Nullable |
+| `paymentMode` | `String?` | |
+| `notes` | `String?` | |
+| `pdfPath` | `String?` | Local path to generated PDF |
+| `createdAt` | `DateTime` | |
+| `updatedAt` | `DateTime` | |
+| `dynamicCharges` | `Map<String, double>` | Default empty - arbitrary custom charges |
+| `dynamicDeductions` | `Map<String, double>` | Default empty - arbitrary custom deductions |
+| `electricityUnits` | `double?` | |
+| `waterUnits` | `double?` | |
+| `previousElectricityReading` | `double?` | |
+| `currentElectricityReading` | `double?` | |
+| `previousWaterReading` | `double?` | |
+| `currentWaterReading` | `double?` | |
+
+- **Getters**: `outstandingAmount` = totalAmount - paidAmount; `isFullyPaid` = paidAmount >= totalAmount; `isOverdue` = dueDate past && not paid.
+- `BillModel.create()` auto-generates id, billNumber, sets status=pending, paidAmount=0.
+
+### PaymentStatus (typeId: 4)
+- `pending`, `paid`, `overdue`, `partiallyPaid`
+
+### DateSystem (typeId: 5)
+- `ad` (Gregorian), `bs` (Bikram Sambat)
+
+---
+
+## BLoC/Cubit Reference (all events + states)
+
+### LanguageCubit (state: `AppLanguage` enum: `ne` or `en`)
+- **ctor**: Loads saved language from Hive (`app_language` key, default `ne`).
+- **methods**: `toggleLanguage()`, `setLanguage(AppLanguage)`.
+
+### SettingsCubit (state: `DateSystem` enum: `ad` or `bs`)
+- **ctor**: Loads saved system from Hive (`preferred_date_system` key, default `ad`).
+- **methods**: `setDateSystem(DateSystem)`, `toggleDateSystem()`.
+
+### PropertyBloc (states: PropertyInitial, PropertyLoading, PropertyLoaded[properties], PropertyError[message])
+| Event | Payload | What it does |
+|-------|---------|-------------|
+| `LoadProperties` | none | Emits all properties from Hive box |
+| `AddProperty` | `PropertyModel` | Puts into Hive, re-emits loading |
+| `UpdateProperty` | `PropertyModel` | Puts into Hive, re-emits loading |
+| `DeleteProperty` | `id` (String) | Deletes by ID, re-emits loading |
+| `GetPropertyById` | `id` (String) | Single property result or error |
+
+### TenantBloc (states: TenantInitial, TenantLoading, TenantLoaded[tenants], TenantError[message])
+| Event | Payload | What it does |
+|-------|---------|-------------|
+| `LoadTenants` | none | Emits all tenants |
+| `AddTenant` | `TenantModel` | Put into Hive |
+| `UpdateTenant` | `TenantModel` | Put into Hive |
+| `DeleteTenant` | `id` (String) | Delete from Hive |
+| `GetTenantById` | `id` (String) | Single tenant or error |
+| `GetTenantsByProperty` | `propertyId` (String) | Filter by property |
+
+### BillBloc (states: BillInitial, BillLoading, BillLoaded[bills], BillError[message])
+
+All list operations sort by createdAt descending (most recent first).
+
+| Event | Payload | What it does |
+|-------|---------|-------------|
+| `LoadBills` | none | All bills, sorted by createdAt desc |
+| `AddBill` | `BillModel` | Put into Hive |
+| `UpdateBill` | `BillModel` | Put into Hive |
+| `DeleteBill` | `id` (String) | Delete from Hive |
+| `GetBillById` | `id` (String) | Single bill or error |
+| `GetBillsByTenant` | `tenantId` (String) | Filter by tenantId |
+| `GetBillsByProperty` | `propertyId` (String) | Filter by propertyId |
+| `GetBillsByDateRange` | `startDate`, `endDate` | Filter by createdAt range |
+| `MarkBillAsPaid` | `billId`, `paymentMode?` | Sets status=paid, paidAmount=totalAmount, paidDate=now |
+| `MarkBillAsUnpaid` | `billId` | Sets status=pending, paidAmount=0, clears paidDate/paymentMode |
+| `GetOverdueBills` | none | Filters isOverdue && not paid, sorted by dueDate desc |
+| `GetPendingBills` | none | Filters pending or partiallyPaid, sorted by dueDate desc |
+
+---
+
+## Screens (complete description)
+
+### `main.dart`
+- Initializes Flutter binding, Hive CE, registers 5 type adapters, opens 4 boxes.
+- MultiBlocProvider: LanguageCubit + SettingsCubit at top, then nested LanguageCubit builder.
+- Inner provider: PropertyBloc (auto LoadProperties), TenantBloc (auto LoadTenants), BillBloc (auto LoadBills).
+- MaterialApp receives L10n provider for translations and locale (ne/en).
+- Route decision: OnboardingScreen (if `onboarding_completed` not in Hive settings) -> HomeScreen.
+
+### `onboarding_screen.dart`
+- 4-page StepPageView: Language selection -> Calendar system -> Add Property -> Add Tenant.
+- Language + Calendar steps are **not skippable**. Property + Tenant steps are skippable (can be done later).
+- Contains shared widgets: `_IllustrationBubble` (animated colored circle), `_LanguageTile`, `_OnboardingField` (FormGroup-based form field with validation), `_PrimaryButton`, `_GhostButton`, `_StepIndicator`.
+- On completion: sets `onboarding_completed=true` in Hive settings box, navigates to HomeScreen with fade transition.
+
+### `home_screen.dart`
+- StatefulWidget with BottomNavigationBar: Home (index 0), History (2), Reports (1), Settings (3). *(Note: non-sequential indices)*
+- **DashboardScreen** (index 0): Pull-to-refresh triggers LoadProperties, LoadTenants, LoadBills. Shows 4 stat tiles: properties count, tenants count, pending amount, overdue amount. Shows 5 recent bills via `BillCard`. FAB to create bill (navigates to CreateBillScreen). Floating `BillCard` shows bill count summary.
+- Uses `BillCard` in the recent bills section.
+
+### `create_bill_screen.dart` (~1200 lines)
+- Complex reactive form using `reactive_forms`.
+- Top section: Property dropdown, Tenant dropdown (filtered by property), month/year/date system selection.
+- BS date support: if user has BS selected, month/year pickers use Nepali month names and BS year range.
+- Rent auto-fills from tenant's `monthlyRent`.
+- Utility section: Shows Electric and Water charge inputs with unit count tracking (previous/current readings) and rate calculation.
+- Advanced section: Internet charges, Other charges + description, Discount, Dynamic charges map (add custom charges), Dynamic deductions map (add custom deductions).
+- Total amount auto-calculates: rent + all charges - discount - all deductions.
+- Submit: creates `BillModel.create()`, dispatches `AddBill` event, shows success snackbar, pops route.
+- Uses `_DatePickerField` widget for date input (swaps between AD/BS calendar picker).
+
+### `history_screen.dart`
+- Groups all bills by Year -> Month, shows grouped `SliverList`.
+- Filter chips: year selector, status filter (All, Paid, Pending, Overdue, Partially Paid).
+- Pull-to-refresh. Empty state with illustration and "create first bill" button.
+
+### `tenant_list_screen.dart`
+- Search bar filters by name. Pull-to-refresh. List shows tenant name, phone, property name, citizenship number.
+- Swipe actions: edit (leads to AddEditTenantScreen), delete (with confirmation).
+- FAB navigates to AddEditTenantScreen.
+
+### `add_edit_tenant_screen.dart`
+- Reactive form with validation. Fields: name, phone, citizenship number, property dropdown, move-in date, lease end date, electricity rate, water rate, initial electricity reading, initial water reading, monthly rent, citizenship image picker, isActive toggle.
+- When editing, populates form with existing tenant data.
+- Uses `ReactiveTextField`, `ReactiveDropdownField`, `ReactiveDatepickerField`, `ReactiveSwitch` from reactive_forms.
+
+### `property_list_screen.dart`
+- Search bar filters by name. Pull-to-refresh (replaces initial load). Cards show property name, address, unit number, monthly rent, owner name/phone.
+- Swipe actions: edit (leads to AddEditPropertyScreen), delete.
+- FAB navigates to AddEditPropertyScreen.
+
+### `add_edit_property_screen.dart`
+- Reactive form. Fields: name, address, unit number, owner name, owner phone, monthly rent, security deposit, isActive toggle.
+- When editing, populates existing data.
+
+### `settings_screen.dart`
+- Sections:
+  1. **App Settings**: Language toggle (RadioGroup: Nepali/English via LanguageCubit), Calendar toggle (RadioGroup: BS/AD via SettingsCubit).
+  2. **Data Management**: Navigate to TenantListScreen and PropertyListScreen.
+  3. **About**: Shows app name.
+- Uses `RadioGroup<T>` with `RadioListTile<T>` for selection (Flutter 3.32+ API).
+
+### `reports_screen.dart`
+- Monthly report: Month dropdown, year dropdown. Shows total rent, bills count, collection amount, collection rate, pending amount, overdue amount. Uses report service.
+- Yearly report: Year dropdown. Shows total yearly collection, total bills, monthly breakdown list.
+- Empty state if no data exists for selected period.
+
+---
+
+## Services
+
+### `report_service.dart` (ReportService)
+No constructor params. Uses Hive boxes directly via `Hive.box<T>()`.
+
+**`getMonthlyReport(month, year, dateSystem)`** -> `Map<String, dynamic>` with keys:
+- `totalRentCollected` (double)
+- `totalPendingAmount` (double)
+- `totalOverdueAmount` (double)
+- `totalBills` (int)
+- `paidBills` (int)
+- `collectionRate` (double, 0-100)
+- `totalBilledAmount` (double)
+- `monthlyCollection` (Map<int, double>)
+- `monthlyStats` (List<Map>) - per-bill stats
+
+For BS month: converts to AD year first using `midDate.toDateTime()`, then filters by `createdAt` month/year.
+
+**`getYearlyReport(year, dateSystem)`** -> `Map<String, dynamic>` with keys:
+- `totalYearlyCollection` (double)
+- `totalBills` (int)
+- `monthlyCollection` (Map<int, double>) - per-month collected amounts
+- `monthlyBills` (Map<int, int>) - per-month bill count
+- `totalPendingAmount` (double)
+- `totalOverdueAmount` (double)
+
+For BS year: uses `NepaliDateTime(year).toDateTime()` to calculate year boundaries.
+
+### `notification_service.dart` (NotificationService)
+Static class. `initialize()` sets up `flutter_local_notifications` with Android + iOS/macOS initialization settings. Uses `timezone` package. Currently only initialization, no scheduling calls.
+
+---
+
+## Widgets
+
+### `StatCard({title, value, icon, color})`
+Material Card with gradient overlay (10% to 5% alpha of color), centered icon (32px), value (titleLarge bold), title (bodySmall).
+
+### `BillCard(BillModel bill)`
+Full bill information card with:
+- Bill number chip + status badge (`Paid`/`Pending`/`Overdue`/`Partially Paid`).
+- Tenant name (fetched via tenantBox lookup), property name, billing period (localized month + year, formatted per date system).
+- Rent + charges + deductions breakdown.
+- Total amount in primary color.
+- Outstanding amount in red if not fully paid.
+- Payment date if paid.
+- Swipe actions: mark paid/unpaid (confirms with dialog), share PDF, delete.
+- Receipt button: opens `BillPreviewOverlay`.
+- Share button: creates PDF and shares via `share_plus`.
+
+### `BillReceiptWidget(BillModel bill, {showBorder: false})`
+Complete receipt template for rendering. Shows:
+- App name, bill number, date.
+- Tenant + property details.
+- Billing period.
+- Charges table (rent, electricity, water, internet, other, discount, dynamic charges).
+- Total amount.
+- Status indicator.
+- Currency symbol (रू) throughout.
+
+### `BillPreviewOverlay(BillModel bill)`
+Full-screen overlay with `Scaffold` showing the receipt inside a scrollable view. Has a close button. Uses `BillReceiptWidget` internally.
+
+---
+
+## Localization (`lib/utils/l10n.dart`)
+
+**Type**: `L10n` class, not using Flutter's intl/arb. Manual string map approach.
+
+**Usage**: `L10n.of(context)` or pass `L10n(language)` directly.
+
+**Data**:
+- `_localizedValues` typed as `Map<AppLanguage, Map<String, Object>>`
+- Keys are simple string tokens like `'app_name'`, `'create_bill'`, `'select_tenant'` etc.
+- Values include strings, booleans, and nested `Map<int, String>` for month names.
+
+**Month name maps** (key -> nested map with int keys 1-12):
+| Key | Language | Calendar |
+|-----|----------|----------|
+| `'months'` | Nepali | BS month names (बैशाख through चैत्र) |
+| `'months_ad'` | Nepali | AD month names (जनवरी through डिसेम्बर) |
+| `'months'` | English | AD month names (January through December) |
+| `'months_bs'` | English | BS month names (Baisakh through Chaitra) |
+
+**`getMonthName(int month, {bool isBS: false})`**: Returns correct month name based on language + calendar combo.
+
+**`String get(String key)`**: Returns value from map for current language, or the key itself if missing.
+
+**`AppLocalizationsDelegate`**: `LocalizationsDelegate<L10n>` - always supported, auto-reload, provides `L10n` via `of(context)`.
+
+---
+
+## Theme (`lib/utils/theme.dart`)
+
+**AppTheme.lightTheme** - Material 3, Google Fonts Poppins throughout.
+
+**Colors**:
+| Constant | Value | Usage |
+|----------|-------|-------|
+| `primary` | `#2563EB` Royal Blue | Primary buttons, accents, nav selection |
+| `primaryLight` | `#60A5FA` | Lighter variant |
+| `primaryLighter` | `#EFF6FF` | Nav indicator background |
+| `accent` | `#10B981` Emerald | Success states |
+| `danger` | `#EF4444` | Error, overdue |
+| `warning` | `#F59E0B` | Warning states |
+| `success` | `#22C55E` | Paid badge |
+| `textPrimary` | `#0F172A` | Main text |
+| `textSecondary` | `#334155` | Secondary text |
+| `textMuted` | `#64748B` | Muted/caption text |
+| `divider` | `#E2E8F0` | Borders |
+| `surface` | `#F8FAFC` | Card backgrounds |
+| `background` | `#F1F5F9` | Form fill backgrounds |
+| `cardBg` | `Colors.white` | Card backgrounds |
+| `shadow` | `0x0A0F172A` | Subtle shadows |
+
+**Typography**: Google Fonts Poppins. headlineLarge(32/w700), headlineMedium(24/w700), titleLarge(18/w600), titleMedium(15/w600), bodyLarge(15), bodyMedium(13), bodySmall(11/w500), labelLarge(14/w600/white).
+
+**UI specifics**: Cards rounded(16) with 0.5 divider border, inputs rounded(12) with filled background, buttons full-width 50px tall rounded(12), FAB rounded(16).
+
+---
+
+## Constants (`lib/utils/constants.dart`)
+
+```dart
+Constants.propertiesBox = 'properties'   // Hive box
+Constants.tenantsBox = 'tenants'          // Hive box
+Constants.billsBox = 'bills'              // Hive box
+Constants.settingsBox = 'settings'        // Hive box (dynamic, not typed)
+Constants.currency = 'रू'                  // Nepali Rupee symbol
+Constants.appName = 'घर भाडा बिल'         // Nepali app name
+```
+
+---
+
+## Hive Storage
+
+### Type Adapter Registration (main.dart)
+```
+PropertyModel -> typeId 0
+TenantModel   -> typeId 1
+BillModel     -> typeId 2  (but codegen uses typeId 2)
+PaymentStatus -> typeId 4
+DateSystem    -> typeId 5
+```
+
+### Boxes
+| Box Name | Type | Contains |
+|----------|------|----------|
+| `properties` | `PropertyModel` | All properties |
+| `tenants` | `TenantModel` | All tenants |
+| `bills` | `BillModel` | All bills |
+| `settings` | `dynamic` | app_language ('ne'/'en'), preferred_date_system ('ad'/'bs'), onboarding_completed (bool) |
+
+### Generated File: `lib/hive_registrar.g.dart`
+Contains `PropertyModelAdapter`, `TenantModelAdapter`, `BillModelAdapter`, `PaymentStatusAdapter`, `DateSystemAdapter`. Auto-generated by `hive_ce_generator`.
+
+---
+
+## Calendar Standardization (AD-Standard Storage)
+
+1. **Save in AD**: All dates (billing months/years, due dates) stored as Gregorian AD in Hive for portability and consistent sorting.
+2. **Display conversion**: When SettingsCubit state is BS, UI converts stored AD values to Nepali dates on-the-fly using `nepali_utils` (e.g., `date.toNepaliDateTime()`).
+3. **Forms**: Create bill form switches between AD date picker and BS date picker based on current settings. The underlying stored values remain AD.
+4. **History/Reports**: Group and filter bills by user's current date system. For BS, converts the stored AD months to BS equivalents for display grouping.
+
+---
+
+## Key Architectural Decisions
+
+### App Initialization & Routing
+- No go_router - direct widget decision in `main.dart` based on Hive settings flag.
+- Onboarding is a one-time screen that sets `onboarding_completed` in Hive.
+- Language/Calendar can be changed later in Settings. Property/Tenant can be added later via Settings -> Data Management.
+
+### Form Pattern
+- Uses `reactive_forms` (FormGroup, FormControl, validators) in create_bill_screen and add_edit_tenant_screen.
+- Forms validate in real-time, disable submit button until valid.
+- Dynamic charges/deductions: users add arbitrary named charges via a Map<String, double>.
+
+### State Pattern
+- BLoC for CRDT-heavy entities (Property, Tenant, Bill) - always emit full list on change.
+- Cubit for simple preferences (Language, Settings) - emit single value.
+- All BLoCs are instantiated once in main.dart with `MultiBlocProvider`, no route-level providers.
+
+### Hive Usage
+- Boxes are opened directly in main.dart, accessed via `Hive.box<T>()` everywhere.
+- BLoCs store their `Box<T>` as a late field after construction.
+- No repository/service abstraction layer between BLoCs and Hive - BLoCs interact directly with boxes.
+
+### Receipt/PDF
+- `BillReceiptWidget` renders a visual receipt.
+- `BillCard` can share as PDF using `pdf` + `printing` + `share_plus`.
+- `BillPreviewOverlay` shows the receipt in a full-screen scrollable overlay.
+
+---
+
+## How to Find Anything Quickly
+
+| Want to... | File to check |
+|------------|--------------|
+| Add a new BLoC event | `lib/bloc/<domain>/<domain>_event.dart` + handler in `*_bloc.dart` |
+| Change UI color | `lib/utils/theme.dart` -> `AppTheme` class |
+| Add translations | `lib/utils/l10n.dart` -> Add to both `AppLanguage.ne` and `AppLanguage.en` maps |
+| Add a model field | Update `*_model.dart` with `@HiveField(N)`, re-run codegen |
+| After model changes | Run `dart run build_runner build --delete-conflicting-outputs` |
+| Change Hive box structure | `lib/utils/constants.dart` for box names, `main.dart` for registration |
+| Add a new screen | `lib/screens/`, then wire nav from existing screen |
+| Financial calculations | `lib/services/report_service.dart` |
+| Bill sharing/PDF | `lib/widgets/bill_card.dart` (share action) |
+| Onboarding flow | `lib/screens/onboarding_screen.dart` |
+| Bottom nav structure | `lib/screens/home_screen.dart` |

@@ -78,14 +78,6 @@ class MarkBillAsPaid extends BillEvent {
   List<Object?> get props => [billId, paymentMode];
 }
 
-class GenerateBillPDF extends BillEvent {
-  final BillModel bill;
-  const GenerateBillPDF({required this.bill});
-
-  @override
-  List<Object?> get props => [bill];
-}
-
 class GetOverdueBills extends BillEvent {}
 
 class GetPendingBills extends BillEvent {}

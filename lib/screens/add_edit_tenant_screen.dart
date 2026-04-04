@@ -2,14 +2,17 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:nepali_date_picker/nepali_date_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
 import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
+import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
+import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
-import 'package:rent_bill_maker/utils/theme.dart';
 
 class AddEditTenantScreen extends StatefulWidget {
   final TenantModel? tenant;
@@ -27,6 +30,13 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
   DateTime? _moveInDate;
   String? _selectedPropertyId;
   String? _citizenshipImagePath;
+  late TextEditingController _elecRateController;
+  late TextEditingController _waterRateController;
+  late TextEditingController _elecInitialController;
+  late TextEditingController _waterInitialController;
+  DateTime? _leftDate;
+  bool _isBS = false;
+  bool _isActive = true;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -38,8 +48,22 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
       text: widget.tenant?.citizenshipNumber ?? '',
     );
     _moveInDate = widget.tenant?.moveInDate ?? DateTime.now();
+    _leftDate = widget.tenant?.leftDate;
     _selectedPropertyId = widget.tenant?.propertyId;
     _citizenshipImagePath = widget.tenant?.citizenshipImagePath;
+    _elecRateController = TextEditingController(
+      text: widget.tenant?.electricityRate.toStringAsFixed(0) ?? '0',
+    );
+    _waterRateController = TextEditingController(
+      text: widget.tenant?.waterRate.toStringAsFixed(0) ?? '0',
+    );
+    _elecInitialController = TextEditingController(
+      text: widget.tenant?.initialElectricityReading.toStringAsFixed(1) ?? '0',
+    );
+    _waterInitialController = TextEditingController(
+      text: widget.tenant?.initialWaterReading.toStringAsFixed(1) ?? '0',
+    );
+    _isActive = widget.tenant?.isActive ?? true;
   }
 
   @override
@@ -47,6 +71,10 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     _citizenshipController.dispose();
+    _elecRateController.dispose();
+    _waterRateController.dispose();
+    _elecInitialController.dispose();
+    _waterInitialController.dispose();
     super.dispose();
   }
 
@@ -61,12 +89,12 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt),
+                leading: const Icon(Icons.camera_alt_rounded),
                 title: Text(l10n.get('camera')),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library),
+                leading: const Icon(Icons.photo_library_rounded),
                 title: Text(l10n.get('gallery')),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
@@ -83,7 +111,6 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
         imageQuality: 80,
       );
       if (image != null) {
-        // Save to app directory
         final dir = await getApplicationDocumentsDirectory();
         final fileName =
             'citizenship_${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -99,8 +126,6 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
   Widget build(BuildContext context) {
     final isEdit = widget.tenant != null;
     final l10n = L10n.of(context);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -115,9 +140,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // --- Tenant Details Card ---
-                  _buildFormCard(
-                    isDark: isDark,
+                  _formCard(
                     title: l10n.get('tenant_details'),
                     icon: Icons.person_outline,
                     children: [
@@ -132,25 +155,22 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                             v == null || v.isEmpty ? 'आवश्यक छ' : null,
                         textCapitalization: TextCapitalization.words,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       TextFormField(
                         controller: _phoneController,
                         decoration: InputDecoration(
                           labelText: l10n.get('contact_number'),
-                          hintText: '98XXXXXXXX',
+                          hintText: l10n.get('phone_hint'),
                           prefixIcon: const Icon(Icons.phone, size: 20),
                         ),
                         keyboardType: TextInputType.phone,
                         validator: (v) =>
-                            v == null || v.isEmpty ? 'आवश्यक छ' : null,
+                            v == null || v.isEmpty ? l10n.get('required') : null,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-
-                  // --- Rental Details Card ---
-                  _buildFormCard(
-                    isDark: isDark,
+                  const SizedBox(height: 16),
+                  _formCard(
                     title: l10n.get('room_flat_shop'),
                     icon: Icons.key_outlined,
                     children: [
@@ -158,52 +178,36 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                         builder: (context, state) {
                           if (state is PropertyLoaded) {
                             if (state.properties.isEmpty) {
-                              return Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: Colors.orange.withValues(alpha: 0.5),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.info_outline,
-                                      color: Colors.orange,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        l10n.get('add_room_first'),
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              return _InfoBox(
+                                icon: Icons.info_outline,
+                                text: l10n.get('add_room_first'),
                               );
                             }
                             return DropdownButtonFormField<String>(
-                              initialValue: _selectedPropertyId,
+                              value: _selectedPropertyId,
                               decoration: InputDecoration(
                                 labelText: l10n.get('select_room'),
                                 prefixIcon: const Icon(Icons.home, size: 20),
                               ),
-                              items: state.properties.map((property) {
+                              items: state.properties.where((property) {
+                                final activeTenants = Hive.box<TenantModel>(Constants.tenantsBox).values.where((t) => t.isActive).toList();
+                                final activePropertyIds = activeTenants.map((t) => t.propertyId).toSet();
+                                return !activePropertyIds.contains(property.id) || property.id == widget.tenant?.propertyId;
+                              }).map((property) {
                                 return DropdownMenuItem(
                                   value: property.id,
                                   child: Text(
                                     property.unitNumber.isNotEmpty
                                         ? '${property.name} - ${property.unitNumber}'
                                         : property.name,
-                                    style: const TextStyle(fontSize: 14),
                                   ),
                                 );
                               }).toList(),
                               onChanged: (value) {
                                 setState(() => _selectedPropertyId = value);
+                                if (!isEdit && value != null) {
+                                  _loadPreviousReadingsForProperty(value);
+                                }
                               },
                               validator: (v) =>
                                   v == null ? l10n.get('required') : null,
@@ -212,44 +216,248 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                           return const LinearProgressIndicator();
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            l10n.get('active_status'),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                _isActive
+                                    ? l10n.get('currently_active')
+                                    : l10n.get('moved_out'),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Transform.scale(
+                                scale: 0.7,
+                                child: Switch.adaptive(
+                                  value: _isActive,
+                                  onChanged: (val) =>
+                                      setState(() => _isActive = val),
+                                  activeTrackColor: const Color(0xFF059669),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      if (!_isActive) ...[
+                        const SizedBox(height: 14),
+                        InkWell(
+                          onTap: () async {
+                            if (_isBS) {
+                              final date = await showNepaliDatePicker(
+                                context: context,
+                                initialDate:
+                                    _leftDate?.toNepaliDateTime() ??
+                                    NepaliDateTime.now(),
+                                firstDate: NepaliDateTime(2000),
+                                lastDate: NepaliDateTime.now().add(
+                                  const Duration(days: 365),
+                                ),
+                              );
+                              if (date != null) {
+                                setState(() => _leftDate = date.toDateTime());
+                              }
+                            } else {
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate: _leftDate ?? DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime.now().add(
+                                  const Duration(days: 365),
+                                ),
+                              );
+                              if (date != null) {
+                                setState(() => _leftDate = date);
+                              }
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: l10n.get('left_date'),
+                              prefixIcon: const Icon(
+                                Icons.event_busy,
+                                size: 20,
+                              ),
+                              enabled: false,
+                            ),
+                            child: Text(
+                              _leftDate != null
+                                  ? (_isBS
+                                        ? NepaliDateFormat('dd MMM yyyy').format(
+                                            _leftDate!.toNepaliDateTime(),
+                                          )
+                                        : DateFormat(
+                                            'dd MMM yyyy',
+                                          ).format(_leftDate!))
+                                  : l10n.get('select_left_date'),
+                              style: TextStyle(
+                                color: _leftDate == null ? Colors.grey : null,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            l10n.get('move_in_date'),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                _isBS
+                                    ? l10n.get('using_bs')
+                                    : l10n.get('using_ad'),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Transform.scale(
+                                scale: 0.7,
+                                child: Switch.adaptive(
+                                  value: _isBS,
+                                  onChanged: (val) =>
+                                      setState(() => _isBS = val),
+                                  activeTrackColor: const Color(0xFF059669),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
                       InkWell(
                         onTap: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: _moveInDate ?? DateTime.now(),
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime.now().add(
-                              const Duration(days: 365),
-                            ),
-                          );
-                          if (date != null) setState(() => _moveInDate = date);
+                          if (_isBS) {
+                            final date = await showNepaliDatePicker(
+                              context: context,
+                              initialDate:
+                                  _moveInDate?.toNepaliDateTime() ??
+                                  NepaliDateTime.now(),
+                              firstDate: NepaliDateTime(2000),
+                              lastDate: NepaliDateTime.now().add(
+                                const Duration(days: 365),
+                              ),
+                            );
+                            if (date != null) {
+                              setState(() => _moveInDate = date.toDateTime());
+                            }
+                          } else {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: _moveInDate ?? DateTime.now(),
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 365),
+                              ),
+                            );
+                            if (date != null) {
+                              setState(() => _moveInDate = date);
+                            }
+                          }
                         },
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                         child: InputDecorator(
                           decoration: InputDecoration(
-                            labelText: l10n.get('due_date'),
+                            labelText: l10n.get('move_in_date'),
                             prefixIcon: const Icon(
                               Icons.calendar_today,
                               size: 20,
                             ),
-                            enabled: false, // Ensure touch passes through
+                            enabled: false,
                           ),
                           child: Text(
                             _moveInDate != null
-                                ? DateFormat('dd MMM yyyy').format(_moveInDate!)
+                                ? (_isBS
+                                      ? NepaliDateFormat('dd MMM yyyy').format(
+                                          _moveInDate!.toNepaliDateTime(),
+                                        )
+                                      : DateFormat(
+                                          'dd MMM yyyy',
+                                        ).format(_moveInDate!))
                                 : l10n.get('loading'),
-                            style: const TextStyle(fontSize: 14),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-
-                  // --- Identity & Citizenship Card ---
-                  _buildFormCard(
-                    isDark: isDark,
+                  const SizedBox(height: 16),
+                  _formCard(
+                    title: l10n.get('utility_rates'),
+                    icon: Icons.bolt_outlined,
+                    children: [
+                      TextFormField(
+                        controller: _elecRateController,
+                        decoration: InputDecoration(
+                          labelText: l10n.get('elec_unit_price'),
+                          prefixIcon: const Icon(Icons.bolt, size: 20),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _waterRateController,
+                        decoration: InputDecoration(
+                          labelText: l10n.get('water_unit_price'),
+                          prefixIcon: const Icon(Icons.water_drop, size: 20),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      const Divider(height: 32),
+                      Text(
+                        l10n.get('initial_readings'),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _elecInitialController,
+                        decoration: InputDecoration(
+                          labelText: l10n.get('initial_reading_electricity'),
+                          prefixIcon: const Icon(Icons.bolt, size: 20),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _waterInitialController,
+                        decoration: InputDecoration(
+                          labelText: l10n.get('initial_reading_water'),
+                          prefixIcon: const Icon(Icons.water_drop, size: 20),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _formCard(
                     title: l10n.get('citizenship_proof'),
                     icon: Icons.assignment_ind_outlined,
                     children: [
@@ -261,21 +469,17 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                           prefixIcon: const Icon(Icons.badge, size: 20),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       InkWell(
                         onTap: _pickCitizenshipImage,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                         child: Container(
-                          height: _citizenshipImagePath != null ? null : 120,
+                          height: _citizenshipImagePath != null ? null : 140,
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.grey.shade900
-                                : Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isDark
-                                  ? Colors.grey.shade800
-                                  : Colors.grey.shade300,
+                              color: Colors.grey.shade200,
                               style: BorderStyle.solid,
                             ),
                           ),
@@ -283,7 +487,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                               ? Stack(
                                   children: [
                                     ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(12),
                                       child: Image.file(
                                         File(_citizenshipImagePath!),
                                         width: double.infinity,
@@ -296,9 +500,9 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                                       right: 8,
                                       child: GestureDetector(
                                         onTap: () {
-                                          setState(
-                                            () => _citizenshipImagePath = null,
-                                          );
+                                          setState(() {
+                                            _citizenshipImagePath = null;
+                                          });
                                         },
                                         child: Container(
                                           padding: const EdgeInsets.all(6),
@@ -311,7 +515,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                                           child: const Icon(
                                             Icons.close,
                                             color: Colors.white,
-                                            size: 18,
+                                            size: 16,
                                           ),
                                         ),
                                       ),
@@ -322,9 +526,9 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      Icons.add_a_photo,
+                                      Icons.add_a_photo_rounded,
                                       size: 32,
-                                      color: Colors.grey.shade400,
+                                      color: Colors.grey.shade300,
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
@@ -332,7 +536,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
-                                        color: Colors.grey.shade500,
+                                        color: Colors.grey.shade400,
                                       ),
                                     ),
                                   ],
@@ -350,10 +554,10 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
+                color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withValues(alpha: 0.04),
                     offset: const Offset(0, -4),
                     blurRadius: 10,
                   ),
@@ -364,20 +568,15 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
                   onPressed: _saveTenant,
                   child: Text(
                     isEdit
-                        ? "Update Tenant"
-                        : l10n.get(
-                            'add_tenant',
-                          ), // Need a translaton for Update Tenant if not present, but use general text
+                        ? l10n.get('update_tenant')
+                        : l10n.get('add_tenant'),
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -389,19 +588,12 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
     );
   }
 
-  Widget _buildFormCard({
-    required bool isDark,
+  Widget _formCard({
     required String title,
     required IconData icon,
     required List<Widget> children,
   }) {
     return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-        ),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -409,18 +601,18 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
           children: [
             Row(
               children: [
-                Icon(icon, size: 20, color: AppTheme.accent),
+                Icon(icon, size: 18, color: const Color(0xFF059669)),
                 const SizedBox(width: 8),
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             ...children,
           ],
         ),
@@ -428,32 +620,67 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
     );
   }
 
+  void _loadPreviousReadingsForProperty(String propertyId) {
+    final billBox = Hive.box<BillModel>(Constants.billsBox);
+    final bills = billBox.values
+        .where((b) => b.propertyId == propertyId)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    if (bills.isNotEmpty) {
+      final lastBill = bills.first;
+      setState(() {
+        if (lastBill.currentElectricityReading != null) {
+          _elecInitialController.text =
+              lastBill.currentElectricityReading!.toStringAsFixed(1);
+        }
+        if (lastBill.currentWaterReading != null) {
+          _waterInitialController.text =
+              lastBill.currentWaterReading!.toStringAsFixed(1);
+        }
+      });
+    }
+  }
+
   void _saveTenant() {
     if (_formKey.currentState!.validate() &&
         _selectedPropertyId != null &&
         _moveInDate != null) {
-      final tenant =
-          widget.tenant?.copyWith(
-            name: _nameController.text.trim(),
-            phone: _phoneController.text.trim(),
-            propertyId: _selectedPropertyId!,
-            moveInDate: _moveInDate!,
-            citizenshipNumber: _citizenshipController.text.trim(),
-            citizenshipImagePath: _citizenshipImagePath,
-          ) ??
-          TenantModel.create(
-            name: _nameController.text.trim(),
-            phone: _phoneController.text.trim(),
-            propertyId: _selectedPropertyId!,
-            moveInDate: _moveInDate!,
-            citizenshipNumber: _citizenshipController.text.trim(),
-            citizenshipImagePath: _citizenshipImagePath,
-          );
+      final isEdit = widget.tenant != null;
+      final tenant = TenantModel.create(
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        propertyId: _selectedPropertyId!,
+        moveInDate: _moveInDate!,
+        citizenshipNumber: _citizenshipController.text.trim(),
+        citizenshipImagePath: _citizenshipImagePath,
+        electricityRate: double.tryParse(_elecRateController.text) ?? 0,
+        waterRate: double.tryParse(_waterRateController.text) ?? 0,
+        initialElectricityReading:
+            double.tryParse(_elecInitialController.text) ?? 0,
+        initialWaterReading: double.tryParse(_waterInitialController.text) ?? 0,
+      );
 
-      if (widget.tenant == null) {
-        context.read<TenantBloc>().add(AddTenant(tenant));
+      if (isEdit) {
+        final updatedTenant = widget.tenant!.copyWith(
+          name: _nameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          citizenshipNumber: _citizenshipController.text.trim(),
+          moveInDate: _moveInDate,
+          propertyId: _selectedPropertyId,
+          citizenshipImagePath: _citizenshipImagePath,
+          electricityRate: double.tryParse(_elecRateController.text) ?? 0,
+          waterRate: double.tryParse(_waterRateController.text) ?? 0,
+          initialElectricityReading:
+              double.tryParse(_elecInitialController.text) ?? 0,
+          initialWaterReading:
+              double.tryParse(_waterInitialController.text) ?? 0,
+          isActive: _isActive,
+          leftDate: _isActive ? null : _leftDate,
+        );
+        context.read<TenantBloc>().add(UpdateTenant(updatedTenant));
       } else {
-        context.read<TenantBloc>().add(UpdateTenant(tenant));
+        context.read<TenantBloc>().add(AddTenant(tenant));
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -475,5 +702,30 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
         ),
       );
     }
+  }
+}
+
+class _InfoBox extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _InfoBox({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.orange, size: 20),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
+        ],
+      ),
+    );
   }
 }

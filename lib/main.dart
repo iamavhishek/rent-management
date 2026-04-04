@@ -8,6 +8,7 @@ import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/screens/home_screen.dart';
+import 'package:rent_bill_maker/screens/onboarding_screen.dart';
 import 'package:rent_bill_maker/services/notification_service.dart';
 import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/theme.dart';
@@ -25,11 +26,13 @@ void main() async {
   Hive.registerAdapter(TenantModelAdapter());
   Hive.registerAdapter(BillModelAdapter());
   Hive.registerAdapter(PaymentStatusAdapter());
+  Hive.registerAdapter(DateSystemAdapter());
 
   // Open boxes (v2 names for clean schema)
   await Hive.openBox<PropertyModel>(Constants.propertiesBox);
   await Hive.openBox<TenantModel>(Constants.tenantsBox);
   await Hive.openBox<BillModel>(Constants.billsBox);
+  await Hive.openBox(Constants.settingsBox);
 
   // Initialize notification service
   await NotificationService.initialize();
@@ -56,8 +59,6 @@ class RentBillMakerApp extends StatelessWidget {
             child: MaterialApp(
               title: l10n.get('app_name'),
               theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: ThemeMode.system,
               debugShowCheckedModeBanner: false,
               locale: language == AppLanguage.ne
                   ? const Locale('ne', 'NP')
@@ -67,11 +68,20 @@ class RentBillMakerApp extends StatelessWidget {
                 // No need for GlobalMaterialLocalizations for this simple setup 
                 // but we could add them if date picker localization is needed.
               ],
-              home: const HomeScreen(),
+              home: _getHome(),
             ),
           );
         },
       ),
     );
+  }
+
+  Widget _getHome() {
+    final box = Hive.box(Constants.settingsBox);
+    final onboardingCompleted = box.get('onboarding_completed', defaultValue: false) as bool;
+    if (!onboardingCompleted) {
+      return const OnboardingScreen();
+    }
+    return const HomeScreen();
   }
 }

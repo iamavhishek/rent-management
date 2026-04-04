@@ -28,13 +28,22 @@ class TenantModelAdapter extends TypeAdapter<TenantModel> {
       createdAt: fields[11] as DateTime,
       updatedAt: fields[12] as DateTime,
       isActive: fields[13] as bool,
+      leftDate: fields[18] as DateTime?,
+      electricityRate: fields[14] == null ? 0 : (fields[14] as num).toDouble(),
+      waterRate: fields[15] == null ? 0 : (fields[15] as num).toDouble(),
+      initialElectricityReading: fields[16] == null
+          ? 0
+          : (fields[16] as num).toDouble(),
+      initialWaterReading: fields[17] == null
+          ? 0
+          : (fields[17] as num).toDouble(),
     );
   }
 
   @override
   void write(BinaryWriter writer, TenantModel obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -56,7 +65,17 @@ class TenantModelAdapter extends TypeAdapter<TenantModel> {
       ..writeByte(12)
       ..write(obj.updatedAt)
       ..writeByte(13)
-      ..write(obj.isActive);
+      ..write(obj.isActive)
+      ..writeByte(14)
+      ..write(obj.electricityRate)
+      ..writeByte(15)
+      ..write(obj.waterRate)
+      ..writeByte(16)
+      ..write(obj.initialElectricityReading)
+      ..writeByte(17)
+      ..write(obj.initialWaterReading)
+      ..writeByte(18)
+      ..write(obj.leftDate);
   }
 
   @override
@@ -88,6 +107,14 @@ TenantModel _$TenantModelFromJson(Map<String, dynamic> json) => TenantModel(
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
   isActive: json['isActive'] as bool,
+  leftDate: json['leftDate'] == null
+      ? null
+      : DateTime.parse(json['leftDate'] as String),
+  electricityRate: (json['electricityRate'] as num?)?.toDouble() ?? 0,
+  waterRate: (json['waterRate'] as num?)?.toDouble() ?? 0,
+  initialElectricityReading:
+      (json['initialElectricityReading'] as num?)?.toDouble() ?? 0,
+  initialWaterReading: (json['initialWaterReading'] as num?)?.toDouble() ?? 0,
 );
 
 Map<String, dynamic> _$TenantModelToJson(TenantModel instance) =>
@@ -98,9 +125,14 @@ Map<String, dynamic> _$TenantModelToJson(TenantModel instance) =>
       'propertyId': instance.propertyId,
       'moveInDate': instance.moveInDate.toIso8601String(),
       'leaseEndDate': instance.leaseEndDate?.toIso8601String(),
+      'leftDate': instance.leftDate?.toIso8601String(),
       'citizenshipNumber': instance.citizenshipNumber,
       'citizenshipImagePath': instance.citizenshipImagePath,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'isActive': instance.isActive,
+      'electricityRate': instance.electricityRate,
+      'waterRate': instance.waterRate,
+      'initialElectricityReading': instance.initialElectricityReading,
+      'initialWaterReading': instance.initialWaterReading,
     };

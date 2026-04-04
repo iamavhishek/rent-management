@@ -17,6 +17,14 @@ enum PaymentStatus {
   partiallyPaid,
 }
 
+@HiveType(typeId: 5)
+enum DateSystem {
+  @HiveField(0)
+  ad,
+  @HiveField(1)
+  bs,
+}
+
 @HiveType(typeId: 2)
 @JsonSerializable()
 class BillModel extends Equatable {
@@ -37,6 +45,9 @@ class BillModel extends Equatable {
 
   @HiveField(5)
   final int year;
+
+  @HiveField(30)
+  final DateSystem dateSystem;
 
   @HiveField(6)
   final double rentAmount;
@@ -95,6 +106,24 @@ class BillModel extends Equatable {
   @HiveField(29)
   final Map<String, double> dynamicDeductions;
 
+  @HiveField(31)
+  final double? electricityUnits;
+
+  @HiveField(32)
+  final double? waterUnits;
+
+  @HiveField(33)
+  final double? previousElectricityReading;
+
+  @HiveField(34)
+  final double? currentElectricityReading;
+
+  @HiveField(35)
+  final double? previousWaterReading;
+
+  @HiveField(36)
+  final double? currentWaterReading;
+
   const BillModel({
     required this.id,
     required this.billNumber,
@@ -102,6 +131,7 @@ class BillModel extends Equatable {
     required this.propertyId,
     required this.month,
     required this.year,
+    this.dateSystem = DateSystem.ad,
     required this.rentAmount,
     required this.electricityCharges,
     required this.waterCharges,
@@ -121,6 +151,12 @@ class BillModel extends Equatable {
     required this.updatedAt,
     this.dynamicCharges = const {},
     this.dynamicDeductions = const {},
+    this.electricityUnits,
+    this.waterUnits,
+    this.previousElectricityReading,
+    this.currentElectricityReading,
+    this.previousWaterReading,
+    this.currentWaterReading,
   });
 
   factory BillModel.create({
@@ -128,6 +164,7 @@ class BillModel extends Equatable {
     required String propertyId,
     required int month,
     required int year,
+    DateSystem dateSystem = DateSystem.ad,
     required double rentAmount,
     double electricityCharges = 0,
     double waterCharges = 0,
@@ -137,6 +174,12 @@ class BillModel extends Equatable {
     double discount = 0,
     Map<String, double> dynamicCharges = const {},
     Map<String, double> dynamicDeductions = const {},
+    double? electricityUnits,
+    double? waterUnits,
+    double? previousElectricityReading,
+    double? currentElectricityReading,
+    double? previousWaterReading,
+    double? currentWaterReading,
     required DateTime dueDate,
   }) {
     final totalAmount =
@@ -168,6 +211,7 @@ class BillModel extends Equatable {
       propertyId: propertyId,
       month: month,
       year: year,
+      dateSystem: dateSystem,
       rentAmount: rentAmount,
       electricityCharges: electricityCharges,
       waterCharges: waterCharges,
@@ -183,6 +227,12 @@ class BillModel extends Equatable {
       status: PaymentStatus.pending,
       createdAt: now,
       updatedAt: now,
+      electricityUnits: electricityUnits,
+      waterUnits: waterUnits,
+      previousElectricityReading: previousElectricityReading,
+      currentElectricityReading: currentElectricityReading,
+      previousWaterReading: previousWaterReading,
+      currentWaterReading: currentWaterReading,
     );
   }
 
@@ -193,6 +243,7 @@ class BillModel extends Equatable {
     String? propertyId,
     int? month,
     int? year,
+    DateSystem? dateSystem,
     double? rentAmount,
     double? electricityCharges,
     double? waterCharges,
@@ -211,6 +262,12 @@ class BillModel extends Equatable {
     DateTime? updatedAt,
     Map<String, double>? dynamicCharges,
     Map<String, double>? dynamicDeductions,
+    double? electricityUnits,
+    double? waterUnits,
+    double? previousElectricityReading,
+    double? currentElectricityReading,
+    double? previousWaterReading,
+    double? currentWaterReading,
   }) {
     return BillModel(
       id: id ?? this.id,
@@ -219,6 +276,7 @@ class BillModel extends Equatable {
       propertyId: propertyId ?? this.propertyId,
       month: month ?? this.month,
       year: year ?? this.year,
+      dateSystem: dateSystem ?? this.dateSystem,
       rentAmount: rentAmount ?? this.rentAmount,
       electricityCharges: electricityCharges ?? this.electricityCharges,
       waterCharges: waterCharges ?? this.waterCharges,
@@ -239,6 +297,14 @@ class BillModel extends Equatable {
       updatedAt: updatedAt ?? DateTime.now(),
       dynamicCharges: dynamicCharges ?? this.dynamicCharges,
       dynamicDeductions: dynamicDeductions ?? this.dynamicDeductions,
+      electricityUnits: electricityUnits ?? this.electricityUnits,
+      waterUnits: waterUnits ?? this.waterUnits,
+      previousElectricityReading:
+          previousElectricityReading ?? this.previousElectricityReading,
+      currentElectricityReading:
+          currentElectricityReading ?? this.currentElectricityReading,
+      previousWaterReading: previousWaterReading ?? this.previousWaterReading,
+      currentWaterReading: currentWaterReading ?? this.currentWaterReading,
     );
   }
 
@@ -259,6 +325,7 @@ class BillModel extends Equatable {
     propertyId,
     month,
     year,
+    dateSystem,
     rentAmount,
     electricityCharges,
     waterCharges,

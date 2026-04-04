@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rent_bill_maker/bloc/bill/bill_bloc.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
-import 'package:rent_bill_maker/widgets/bill_card.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
+import 'package:rent_bill_maker/widgets/bill_card.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -39,7 +39,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   l10n.get('bill_history'),
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
@@ -54,42 +54,48 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             },
                           )
                         : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   onChanged: (_) => setState(() {}),
-                  style: const TextStyle(fontSize: 13),
+                  style: const TextStyle(fontSize: 14),
                 ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 34,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _filters.length,
-                    separatorBuilder: (context, _) => const SizedBox(width: 6),
-                    itemBuilder: (context, index) {
-                      final filter = _filters[index];
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _filters.map((filter) {
                       final selected = _filter == filter;
-                      return FilterChip(
-                        label: Text(
-                          filter == 'All'
-                              ? l10n.get('filter_all')
-                              : filter == 'Paid'
-                                  ? l10n.get('filter_paid')
-                                  : filter == 'Pending'
-                                      ? l10n.get('filter_pending')
-                                      : l10n.get('filter_overdue'),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          labelPadding: EdgeInsets.zero,
+                          label: Text(
+                            filter == 'All'
+                                ? l10n.get('filter_all')
+                                : filter == 'Paid'
+                                ? l10n.get('filter_paid')
+                                : filter == 'Pending'
+                                ? l10n.get('filter_pending')
+                                : l10n.get('filter_overdue'),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: selected ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
                           ),
+                          selected: selected,
+                          onSelected: (_) => setState(() => _filter = filter),
+                          showCheckmark: false,
+                          selectedColor: Theme.of(context).primaryColor,
+                          checkmarkColor: Colors.white,
                         ),
-                        selected: selected,
-                        onSelected: (_) => setState(() => _filter = filter),
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
                       );
-                    },
+                    }).toList(),
                   ),
                 ),
               ],
@@ -142,18 +148,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           Icon(
                             Icons.receipt_long_outlined,
                             size: 48,
-                            color: Theme.of(context).dividerColor,
+                            color: Colors.grey.shade300,
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
                           Text(
                             l10n.get('no_bill_found'),
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.color
-                                  ?.withValues(alpha: 0.6),
+                              color: Color(0xFF64748B),
                             ),
                           ),
                         ],
@@ -161,18 +163,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     );
                   }
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  return ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                     itemCount: bills.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
                         child: BillCard(bill: bills[index]),
                       );
                     },
                   );
                 }
-                return const Center(child: Text('कुनै बिल उपलब्ध छैन'));
+                return Center(child: Text(l10n.get('no_bill_found')));
               },
             ),
           ),

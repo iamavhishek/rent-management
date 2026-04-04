@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/screens/add_edit_tenant_screen.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
-import 'package:rent_bill_maker/utils/theme.dart';
 
 class TenantListScreen extends StatelessWidget {
   const TenantListScreen({super.key});
@@ -13,16 +13,7 @@ class TenantListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = L10n.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.get('tenants')),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: l10n.get('add_tenant'),
-            onPressed: () => _addTenant(context),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(l10n.get('tenants'))),
       body: BlocBuilder<TenantBloc, TenantState>(
         builder: (context, state) {
           if (state is TenantLoaded) {
@@ -31,70 +22,157 @@ class TenantListScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
+                    Icon(
+                      Icons.people_outline,
+                      size: 64,
+                      color: Colors.grey.shade300,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       l10n.get('add_tenant_first'),
-                      style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
                       onPressed: () => _addTenant(context),
-                      icon: const Icon(Icons.add),
+                      icon: const Icon(Icons.add, size: 20),
                       label: Text(l10n.get('add_tenant')),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(0, 44),
+                      ),
                     ),
                   ],
                 ),
               );
             }
             return ListView.separated(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
               itemCount: state.tenants.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              separatorBuilder: (context, index) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final tenant = state.tenants[index];
                 return Card(
                   child: InkWell(
                     onTap: () => _editTenant(context, tenant),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       child: Row(
                         children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: AppTheme.accent.withValues(alpha: 0.1),
-                            child: Text(
-                              tenant.name.isNotEmpty ? tenant.name[0].toUpperCase() : '?',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.accent,
-                                fontSize: 16,
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: tenant.isActive
+                                  ? const Color(0xFFD1FAE5)
+                                  : const Color(0xFFFEE2E2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Text(
+                                tenant.name.isNotEmpty
+                                    ? tenant.name[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: tenant.isActive
+                                      ? const Color(0xFF059669)
+                                      : const Color(0xFFDC2626),
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  tenant.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15,
-                                  ),
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        tenant.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 15,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: tenant.isActive
+                                            ? const Color(0xFFD1FAE5)
+                                            : const Color(0xFFFEE2E2),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        tenant.isActive
+                                            ? l10n.get('currently_active')
+                                            : l10n.get('moved_out'),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: tenant.isActive
+                                              ? const Color(0xFF059669)
+                                              : const Color(0xFFDC2626),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 3),
                                 Text(
                                   tenant.phone,
-                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF64748B),
+                                  ),
                                 ),
+                                if (!tenant.isActive &&
+                                    tenant.leftDate != null) ...[
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.event_busy,
+                                        size: 13,
+                                        color: Color(0xFFDC2626),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${l10n.get('left_date')}: ${DateFormat('dd MMM yyyy').format(tenant.leftDate!)}',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFFDC2626),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ),
                           ),
                           IconButton(
-                            icon: Icon(Icons.delete_outline, color: AppTheme.danger.withValues(alpha: 0.8)),
+                            icon: Icon(
+                              Icons.delete_outline,
+                              color: const Color(
+                                0xFFDC2626,
+                              ).withValues(alpha: 0.7),
+                              size: 20,
+                            ),
                             tooltip: l10n.get('delete'),
                             onPressed: () => _confirmDelete(context, tenant),
                           ),
@@ -109,9 +187,16 @@ class TenantListScreen extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _addTenant(context),
-        child: const Icon(Icons.add),
+      floatingActionButton: BlocBuilder<TenantBloc, TenantState>(
+        builder: (context, state) {
+          if (state is TenantLoaded && state.tenants.isNotEmpty) {
+            return FloatingActionButton(
+              onPressed: () => _addTenant(context),
+              child: const Icon(Icons.add),
+            );
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
@@ -141,6 +226,7 @@ class TenantListScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(l10n.get('delete_confirm')),
         content: Text('${l10n.get('delete_tenant_msg')} "${tenant.name}"?'),
         actions: [
@@ -150,7 +236,7 @@ class TenantListScreen extends StatelessWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.danger,
+              backgroundColor: const Color(0xFFDC2626),
               foregroundColor: Colors.white,
             ),
             onPressed: () {

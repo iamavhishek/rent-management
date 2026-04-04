@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
-import 'package:rent_bill_maker/utils/theme.dart';
 
 class AddEditPropertyScreen extends StatefulWidget {
   final PropertyModel? property;
@@ -65,8 +64,6 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
   Widget build(BuildContext context) {
     final isEdit = widget.property != null;
     final l10n = L10n.of(context);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -83,9 +80,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // --- Property Details Card ---
-                  _buildFormCard(
-                    isDark: isDark,
+                  _formCard(
                     title: l10n.get('property_details'),
                     icon: Icons.home_work_outlined,
                     children: [
@@ -100,7 +95,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                             ? l10n.get('required')
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       TextFormField(
                         controller: _addressController,
                         decoration: InputDecoration(
@@ -112,7 +107,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                             ? l10n.get('required')
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       TextFormField(
                         controller: _unitController,
                         decoration: InputDecoration(
@@ -126,11 +121,8 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-
-                  // --- Financial Details Card ---
-                  _buildFormCard(
-                    isDark: isDark,
+                  const SizedBox(height: 16),
+                  _formCard(
                     title:
                         '${l10n.get('monthly_rent')} & ${l10n.get('deposit_amount')}',
                     icon: Icons.account_balance_wallet_outlined,
@@ -143,7 +135,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                               controller: _rentController,
                               decoration: InputDecoration(
                                 labelText: l10n.get('monthly_rent'),
-                                hintText: '5000',
+                                hintText: l10n.get('rent_hint'),
                                 prefixIcon: const Icon(
                                   Icons.payments,
                                   size: 20,
@@ -155,13 +147,13 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                                   : null,
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 14),
                           Expanded(
                             child: TextFormField(
                               controller: _depositController,
                               decoration: InputDecoration(
                                 labelText: l10n.get('deposit_amount'),
-                                hintText: '10000',
+                                hintText: l10n.get('deposit_hint'),
                                 prefixIcon: const Icon(Icons.savings, size: 20),
                               ),
                               keyboardType: TextInputType.number,
@@ -171,11 +163,8 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-
-                  // --- Owner Details Card ---
-                  _buildFormCard(
-                    isDark: isDark,
+                  const SizedBox(height: 16),
+                  _formCard(
                     title: l10n.get('owner_details'),
                     icon: Icons.person_outline,
                     children: [
@@ -190,12 +179,12 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                             ? l10n.get('required')
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       TextFormField(
                         controller: _ownerPhoneController,
                         decoration: InputDecoration(
                           labelText: l10n.get('owner_phone'),
-                          hintText: '98XXXXXXXX',
+                          hintText: l10n.get('phone_hint'),
                           prefixIcon: const Icon(Icons.phone, size: 20),
                         ),
                         keyboardType: TextInputType.phone,
@@ -214,10 +203,10 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
+                color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withValues(alpha: 0.04),
                     offset: const Offset(0, -4),
                     blurRadius: 10,
                   ),
@@ -228,9 +217,6 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
                   onPressed: _saveProperty,
                   child: Text(
@@ -239,7 +225,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                         : l10n.get('add_property'),
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -251,19 +237,12 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
     );
   }
 
-  Widget _buildFormCard({
-    required bool isDark,
+  Widget _formCard({
     required String title,
     required IconData icon,
     required List<Widget> children,
   }) {
     return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-        ),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -271,18 +250,18 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
           children: [
             Row(
               children: [
-                Icon(icon, size: 20, color: AppTheme.primary),
+                Icon(icon, size: 18, color: const Color(0xFF2563EB)),
                 const SizedBox(width: 8),
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             ...children,
           ],
         ),

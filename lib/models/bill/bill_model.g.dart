@@ -23,6 +23,7 @@ class BillModelAdapter extends TypeAdapter<BillModel> {
       propertyId: fields[3] as String,
       month: (fields[4] as num).toInt(),
       year: (fields[5] as num).toInt(),
+      dateSystem: fields[30] == null ? DateSystem.ad : fields[30] as DateSystem,
       rentAmount: (fields[6] as num).toDouble(),
       electricityCharges: (fields[7] as num).toDouble(),
       waterCharges: (fields[8] as num).toDouble(),
@@ -46,13 +47,19 @@ class BillModelAdapter extends TypeAdapter<BillModel> {
       dynamicDeductions: fields[29] == null
           ? const {}
           : (fields[29] as Map).cast<String, double>(),
+      electricityUnits: (fields[31] as num?)?.toDouble(),
+      waterUnits: (fields[32] as num?)?.toDouble(),
+      previousElectricityReading: (fields[33] as num?)?.toDouble(),
+      currentElectricityReading: (fields[34] as num?)?.toDouble(),
+      previousWaterReading: (fields[35] as num?)?.toDouble(),
+      currentWaterReading: (fields[36] as num?)?.toDouble(),
     );
   }
 
   @override
   void write(BinaryWriter writer, BillModel obj) {
     writer
-      ..writeByte(25)
+      ..writeByte(32)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -102,7 +109,21 @@ class BillModelAdapter extends TypeAdapter<BillModel> {
       ..writeByte(28)
       ..write(obj.dynamicCharges)
       ..writeByte(29)
-      ..write(obj.dynamicDeductions);
+      ..write(obj.dynamicDeductions)
+      ..writeByte(30)
+      ..write(obj.dateSystem)
+      ..writeByte(31)
+      ..write(obj.electricityUnits)
+      ..writeByte(32)
+      ..write(obj.waterUnits)
+      ..writeByte(33)
+      ..write(obj.previousElectricityReading)
+      ..writeByte(34)
+      ..write(obj.currentElectricityReading)
+      ..writeByte(35)
+      ..write(obj.previousWaterReading)
+      ..writeByte(36)
+      ..write(obj.currentWaterReading);
   }
 
   @override
@@ -161,6 +182,43 @@ class PaymentStatusAdapter extends TypeAdapter<PaymentStatus> {
           typeId == other.typeId;
 }
 
+class DateSystemAdapter extends TypeAdapter<DateSystem> {
+  @override
+  final typeId = 5;
+
+  @override
+  DateSystem read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return DateSystem.ad;
+      case 1:
+        return DateSystem.bs;
+      default:
+        return DateSystem.ad;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, DateSystem obj) {
+    switch (obj) {
+      case DateSystem.ad:
+        writer.writeByte(0);
+      case DateSystem.bs:
+        writer.writeByte(1);
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DateSystemAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
@@ -172,6 +230,9 @@ BillModel _$BillModelFromJson(Map<String, dynamic> json) => BillModel(
   propertyId: json['propertyId'] as String,
   month: (json['month'] as num).toInt(),
   year: (json['year'] as num).toInt(),
+  dateSystem:
+      $enumDecodeNullable(_$DateSystemEnumMap, json['dateSystem']) ??
+      DateSystem.ad,
   rentAmount: (json['rentAmount'] as num).toDouble(),
   electricityCharges: (json['electricityCharges'] as num).toDouble(),
   waterCharges: (json['waterCharges'] as num).toDouble(),
@@ -201,6 +262,14 @@ BillModel _$BillModelFromJson(Map<String, dynamic> json) => BillModel(
         (k, e) => MapEntry(k, (e as num).toDouble()),
       ) ??
       const {},
+  electricityUnits: (json['electricityUnits'] as num?)?.toDouble(),
+  waterUnits: (json['waterUnits'] as num?)?.toDouble(),
+  previousElectricityReading: (json['previousElectricityReading'] as num?)
+      ?.toDouble(),
+  currentElectricityReading: (json['currentElectricityReading'] as num?)
+      ?.toDouble(),
+  previousWaterReading: (json['previousWaterReading'] as num?)?.toDouble(),
+  currentWaterReading: (json['currentWaterReading'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$BillModelToJson(BillModel instance) => <String, dynamic>{
@@ -210,6 +279,7 @@ Map<String, dynamic> _$BillModelToJson(BillModel instance) => <String, dynamic>{
   'propertyId': instance.propertyId,
   'month': instance.month,
   'year': instance.year,
+  'dateSystem': _$DateSystemEnumMap[instance.dateSystem]!,
   'rentAmount': instance.rentAmount,
   'electricityCharges': instance.electricityCharges,
   'waterCharges': instance.waterCharges,
@@ -229,7 +299,15 @@ Map<String, dynamic> _$BillModelToJson(BillModel instance) => <String, dynamic>{
   'updatedAt': instance.updatedAt.toIso8601String(),
   'dynamicCharges': instance.dynamicCharges,
   'dynamicDeductions': instance.dynamicDeductions,
+  'electricityUnits': instance.electricityUnits,
+  'waterUnits': instance.waterUnits,
+  'previousElectricityReading': instance.previousElectricityReading,
+  'currentElectricityReading': instance.currentElectricityReading,
+  'previousWaterReading': instance.previousWaterReading,
+  'currentWaterReading': instance.currentWaterReading,
 };
+
+const _$DateSystemEnumMap = {DateSystem.ad: 'ad', DateSystem.bs: 'bs'};
 
 const _$PaymentStatusEnumMap = {
   PaymentStatus.pending: 'pending',

@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
-import 'package:rent_bill_maker/services/pdf_generator.dart';
 import 'package:rent_bill_maker/utils/constants.dart';
 
 part 'bill_event.dart';
@@ -23,7 +22,6 @@ class BillBloc extends Bloc<BillEvent, BillState> {
     on<GetBillsByProperty>(_onGetBillsByProperty);
     on<GetBillsByDateRange>(_onGetBillsByDateRange);
     on<MarkBillAsPaid>(_onMarkBillAsPaid);
-    on<GenerateBillPDF>(_onGenerateBillPDF);
     on<GetOverdueBills>(_onGetOverdueBills);
     on<GetPendingBills>(_onGetPendingBills);
   }
@@ -171,23 +169,6 @@ class BillBloc extends Bloc<BillEvent, BillState> {
       }
     } catch (e) {
       emit(BillError(message: 'Failed to mark bill as paid: $e'));
-    }
-  }
-
-  Future<void> _onGenerateBillPDF(
-    GenerateBillPDF event,
-    Emitter<BillState> emit,
-  ) async {
-    try {
-      final pdfPath = await PdfGenerator.generateBillPDF(event.bill);
-      final updatedBill = event.bill.copyWith(pdfPath: pdfPath);
-      await billBox.put(updatedBill.id, updatedBill);
-
-      final bills = billBox.values.toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      emit(BillLoaded(bills: bills));
-    } catch (e) {
-      emit(BillError(message: 'Failed to generate PDF: $e'));
     }
   }
 

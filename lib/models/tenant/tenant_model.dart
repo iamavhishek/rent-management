@@ -26,6 +26,9 @@ class TenantModel extends Equatable {
   @HiveField(6)
   final DateTime? leaseEndDate;
 
+  @HiveField(18)
+  final DateTime? leftDate;
+
   @HiveField(9)
   final String citizenshipNumber;
 
@@ -41,6 +44,18 @@ class TenantModel extends Equatable {
   @HiveField(13)
   final bool isActive;
 
+  @HiveField(14)
+  final double electricityRate;
+
+  @HiveField(15)
+  final double waterRate;
+
+  @HiveField(16)
+  final double initialElectricityReading;
+
+  @HiveField(17)
+  final double initialWaterReading;
+
   const TenantModel({
     required this.id,
     required this.name,
@@ -53,6 +68,11 @@ class TenantModel extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     required this.isActive,
+    this.leftDate,
+    this.electricityRate = 0,
+    this.waterRate = 0,
+    this.initialElectricityReading = 0,
+    this.initialWaterReading = 0,
   });
 
   factory TenantModel.create({
@@ -63,6 +83,11 @@ class TenantModel extends Equatable {
     DateTime? leaseEndDate,
     required String citizenshipNumber,
     String? citizenshipImagePath,
+    DateTime? leftDate,
+    double electricityRate = 0,
+    double waterRate = 0,
+    double initialElectricityReading = 0,
+    double initialWaterReading = 0,
   }) {
     final now = DateTime.now();
     return TenantModel(
@@ -77,6 +102,11 @@ class TenantModel extends Equatable {
       createdAt: now,
       updatedAt: now,
       isActive: true,
+      leftDate: leftDate,
+      electricityRate: electricityRate,
+      waterRate: waterRate,
+      initialElectricityReading: initialElectricityReading,
+      initialWaterReading: initialWaterReading,
     );
   }
 
@@ -89,6 +119,11 @@ class TenantModel extends Equatable {
     String? citizenshipNumber,
     String? citizenshipImagePath,
     bool? isActive,
+    DateTime? leftDate,
+    double? electricityRate,
+    double? waterRate,
+    double? initialElectricityReading,
+    double? initialWaterReading,
   }) {
     return TenantModel(
       id: id,
@@ -102,6 +137,12 @@ class TenantModel extends Equatable {
       createdAt: createdAt,
       updatedAt: DateTime.now(),
       isActive: isActive ?? this.isActive,
+      leftDate: leftDate ?? this.leftDate,
+      electricityRate: electricityRate ?? this.electricityRate,
+      waterRate: waterRate ?? this.waterRate,
+      initialElectricityReading:
+          initialElectricityReading ?? this.initialElectricityReading,
+      initialWaterReading: initialWaterReading ?? this.initialWaterReading,
     );
   }
 
@@ -122,5 +163,6 @@ class TenantModel extends Equatable {
     createdAt,
     updatedAt,
     isActive,
+    leftDate,
   ];
 }

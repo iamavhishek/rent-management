@@ -4,7 +4,7 @@ abstract class TenantState extends Equatable {
   const TenantState();
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => <Object?>[];
 }
 
 class TenantInitial extends TenantState {}
@@ -12,17 +12,17 @@ class TenantInitial extends TenantState {}
 class TenantLoading extends TenantState {}
 
 class TenantLoaded extends TenantState {
-  final List<TenantModel> tenants;
   const TenantLoaded({required this.tenants});
+  final List<TenantModel> tenants;
 
   @override
-  List<Object?> get props => [tenants];
+  List<Object?> get props => <Object?>[tenants];
 }
 
 class TenantError extends TenantState {
-  final String message;
   const TenantError({required this.message});
+  final String message;
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => <Object?>[message];
 }

@@ -3,16 +3,22 @@ import 'package:flutter/material.dart';
 enum AppLanguage { ne, en }
 
 class L10n {
-  final AppLanguage language;
 
   L10n(this.language);
+  final AppLanguage language;
 
-  static L10n of(BuildContext context) {
-    return Localizations.of<L10n>(context, L10n) ?? L10n(AppLanguage.ne);
-  }
+  static L10n of(BuildContext context) => Localizations.of<L10n>(context, L10n) ?? L10n(AppLanguage.ne);
 
-  static const _localizedValues = {
-    AppLanguage.ne: {
+  static const Map<AppLanguage, Map<String, Object>> _localizedValues = <AppLanguage, Map<String, Object>>{
+    AppLanguage.ne: <String, Object>{
+      'welcome_calendar': 'पात्रो छान्नुहोस्',
+      'calendar_desc':
+          'तपाईं आफ्नो बिलहरू कुन पात्रोमा हेर्न र बनाउन चाहनुहुन्छ? यसलाई पछि सेटिङमा परिवर्तन गर्न सकिन्छ।',
+      'ad_system': 'Gregorian (AD)',
+      'bs_system': 'Bikram Sambat (BS)',
+      'use_ad': 'अंग्रेजी मिति (AD) प्रयोग गर्नुहोस्',
+      'use_bs': 'नेपाली मिति (BS) प्रयोग गर्नुहोस्',
+      'select_calendar': 'पात्रो प्रणाली छान्नुहोस्',
       'app_name': 'घर भाडा बिल',
       'dashboard': 'ड्यासबोर्ड',
       'bills': 'बिलहरू',
@@ -39,6 +45,10 @@ class L10n {
       'is_paid_question': 'तिरिएको हो?',
       'cancel': 'रद्द',
       'yes_paid': 'हो, तिरियो',
+      'mark_unpaid_confirm': 'नतिरेको चिन्ह लगाउनुहोस्?',
+      'is_unpaid_question': 'नतिरेको हो?',
+      'yes_unpaid': 'हो, नतिरेको',
+      'mark_unpaid': 'नतिरेको चिन्ह',
       'bill_number': 'बिल नम्बर',
       'billing_period': 'अवधि',
       'due_date_label': 'तिर्ने मिति',
@@ -98,7 +108,7 @@ class L10n {
       'address_hint': 'जस्तै: कोटेश्वर, काठमाडौं',
       'room_number': 'कोठा/यूनिट नम्बर',
       'room_number_hint': 'जस्तै: कोठा 101',
-      'monthly_rent': 'मासिक भाडा (रू) *',
+      'monthly_rent': 'मासिक भाडा (रू.) *',
       'deposit_amount': 'धरौटी (रू)',
       'security_deposit': 'बैना रकम (रू)',
       'owner_details': 'घरधनीको विवरण',
@@ -174,7 +184,7 @@ class L10n {
       'notes': 'कैफियत (Notes)',
       'units_label': 'युनिट',
       'currency': 'रू',
-      'rent_hint': '५०००',
+      'rent_hint': 'मासिक भाडा रकम लेख्नुहोस्',
       'deposit_hint': '१००००',
       'elec_rate_hint': '१२',
       'water_rate_hint': '१००',
@@ -194,7 +204,12 @@ class L10n {
       'setup_property': 'सम्पत्ति सेटअप गर्नुहोस्',
       'setup_tenant': 'भाडावाल सेटअप गर्नुहोस्',
       'onboarding_completed': 'सक्षम हुनुभयो!',
-      'months': {
+      'citizenship': 'नागरिकता',
+      'thank_you': 'धन्यवाद !',
+      'bill_preview': 'बिल पूर्वावलोकन',
+      'share': 'शेयर गर्नुहोस्',
+      'total': 'जम्मा',
+      'months': <int, String>{
         1: 'बैशाख',
         2: 'जेठ',
         3: 'असार',
@@ -208,7 +223,7 @@ class L10n {
         11: 'फागुन',
         12: 'चैत',
       },
-      'months_ad': {
+      'months_ad': <int, String>{
         1: 'जनवरी',
         2: 'फेब्रुअरी',
         3: 'मार्च',
@@ -223,7 +238,15 @@ class L10n {
         12: 'डिसेम्बर',
       },
     },
-    AppLanguage.en: {
+    AppLanguage.en: <String, Object>{
+      'welcome_calendar': 'Select Calendar',
+      'calendar_desc':
+          'Which calendar system would you like to use for your bills? You can change this later in settings.',
+      'ad_system': 'Gregorian (AD)',
+      'bs_system': 'Bikram Sambat (BS)',
+      'use_ad': 'Use Gregorian (AD)',
+      'use_bs': 'Use Bikram Sambat (BS)',
+      'select_calendar': 'Select Calendar System',
       'app_name': 'Rent Bill Maker',
       'dashboard': 'Dashboard',
       'bills': 'Bills',
@@ -250,6 +273,10 @@ class L10n {
       'is_paid_question': 'is paid?',
       'cancel': 'Cancel',
       'yes_paid': 'Yes, Paid',
+      'mark_unpaid_confirm': 'Mark as Unpaid?',
+      'is_unpaid_question': 'is unpaid?',
+      'yes_unpaid': 'Yes, Unpaid',
+      'mark_unpaid': 'Mark Unpaid',
       'bill_number': 'Bill Number',
       'billing_period': 'Period',
       'due_date_label': 'Due Date',
@@ -309,7 +336,7 @@ class L10n {
       'address_hint': 'e.g. Koteshwor, Kathmandu',
       'room_number': 'Room/Unit Number',
       'room_number_hint': 'e.g. Room 101',
-      'monthly_rent': 'Monthly Rent (Rs) *',
+      'monthly_rent': 'Monthly Rent (Rs.) *',
       'deposit_amount': 'Deposit (Rs)',
       'security_deposit': 'Security Deposit',
       'owner_details': 'Owner Details',
@@ -385,7 +412,7 @@ class L10n {
       'notes': 'Notes',
       'units_label': 'units',
       'currency': 'Rs ',
-      'rent_hint': '5000',
+      'rent_hint': 'Enter monthly rent amount',
       'deposit_hint': '10000',
       'elec_rate_hint': '12',
       'water_rate_hint': '100',
@@ -405,7 +432,12 @@ class L10n {
       'setup_property': 'Setup Property',
       'setup_tenant': 'Setup Tenant',
       'onboarding_completed': 'You\'re all set!',
-      'months': {
+      'citizenship': 'Citizenship',
+      'thank_you': 'Thank You!',
+      'bill_preview': 'Bill Preview',
+      'share': 'Share',
+      'total': 'TOTAL',
+      'months': <int, String>{
         1: 'January',
         2: 'February',
         3: 'March',
@@ -419,7 +451,7 @@ class L10n {
         11: 'November',
         12: 'December',
       },
-      'months_bs': {
+      'months_bs': <int, String>{
         1: 'Baisakh',
         2: 'Jestha',
         3: 'Asar',
@@ -440,36 +472,36 @@ class L10n {
     if (isBS) {
       // BS months: use Nepali names for Nepali language, romanized for English
       if (language == AppLanguage.ne) {
-        return (_localizedValues[AppLanguage.ne]!['months']
-                as Map<int, String>)[month] ??
-            '';
+        final Map<int, String> months =
+            _localizedValues[AppLanguage.ne]!['months']! as Map<int, String>;
+        return months[month]!;
       }
-      return (_localizedValues[AppLanguage.en]!['months_bs']
-              as Map<int, String>)[month] ??
-          '';
+      final Map<int, String> monthsBs =
+          _localizedValues[AppLanguage.en]!['months_bs']! as Map<int, String>;
+      return monthsBs[month]!;
     }
     // AD months
     if (language == AppLanguage.ne) {
-      return (_localizedValues[AppLanguage.ne]!['months_ad']
-              as Map<int, String>)[month] ??
-          '';
+      final Map<int, String> monthsAd =
+          _localizedValues[AppLanguage.ne]!['months_ad']! as Map<int, String>;
+      return monthsAd[month]!;
     }
-    return (_localizedValues[AppLanguage.en]!['months']
-            as Map<int, String>)[month] ??
-        '';
+    final Map<int, String> months =
+        _localizedValues[AppLanguage.en]!['months']! as Map<int, String>;
+    return months[month]!;
   }
 
   String get(String key) {
-    final value = _localizedValues[language]?[key];
+    final Object? value = _localizedValues[language]?[key];
     if (value is String) return value;
     return key;
   }
 }
 
 class AppLocalizationsDelegate extends LocalizationsDelegate<L10n> {
-  final AppLanguage language;
 
   const AppLocalizationsDelegate(this.language);
+  final AppLanguage language;
 
   @override
   bool isSupported(Locale locale) => true;

@@ -8,7 +8,6 @@ part 'bill_event.dart';
 part 'bill_state.dart';
 
 class BillBloc extends Bloc<BillEvent, BillState> {
-  late Box<BillModel> billBox;
 
   BillBloc() : super(BillInitial()) {
     billBox = Hive.box<BillModel>(Constants.billsBox);
@@ -22,15 +21,17 @@ class BillBloc extends Bloc<BillEvent, BillState> {
     on<GetBillsByProperty>(_onGetBillsByProperty);
     on<GetBillsByDateRange>(_onGetBillsByDateRange);
     on<MarkBillAsPaid>(_onMarkBillAsPaid);
+    on<MarkBillAsUnpaid>(_onMarkBillAsUnpaid);
     on<GetOverdueBills>(_onGetOverdueBills);
     on<GetPendingBills>(_onGetPendingBills);
   }
+  late Box<BillModel> billBox;
 
   Future<void> _onLoadBills(LoadBills event, Emitter<BillState> emit) async {
     emit(BillLoading());
     try {
-      final bills = billBox.values.toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final List<BillModel> bills = billBox.values.toList()
+        ..sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
       emit(BillLoaded(bills: bills));
     } catch (e) {
       emit(BillError(message: 'Failed to load bills: $e'));
@@ -41,8 +42,8 @@ class BillBloc extends Bloc<BillEvent, BillState> {
     emit(BillLoading());
     try {
       await billBox.put(event.bill.id, event.bill);
-      final bills = billBox.values.toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final List<BillModel> bills = billBox.values.toList()
+        ..sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
       emit(BillLoaded(bills: bills));
     } catch (e) {
       emit(BillError(message: 'Failed to add bill: $e'));
@@ -53,8 +54,8 @@ class BillBloc extends Bloc<BillEvent, BillState> {
     emit(BillLoading());
     try {
       await billBox.put(event.bill.id, event.bill);
-      final bills = billBox.values.toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final List<BillModel> bills = billBox.values.toList()
+        ..sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
       emit(BillLoaded(bills: bills));
     } catch (e) {
       emit(BillError(message: 'Failed to update bill: $e'));
@@ -65,8 +66,8 @@ class BillBloc extends Bloc<BillEvent, BillState> {
     emit(BillLoading());
     try {
       await billBox.delete(event.id);
-      final bills = billBox.values.toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final List<BillModel> bills = billBox.values.toList()
+        ..sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
       emit(BillLoaded(bills: bills));
     } catch (e) {
       emit(BillError(message: 'Failed to delete bill: $e'));
@@ -79,11 +80,11 @@ class BillBloc extends Bloc<BillEvent, BillState> {
   ) async {
     emit(BillLoading());
     try {
-      final bill = billBox.get(event.id);
+      final BillModel? bill = billBox.get(event.id);
       if (bill != null) {
-        emit(BillLoaded(bills: [bill]));
+        emit(BillLoaded(bills: <BillModel>[bill]));
       } else {
-        emit(BillError(message: 'Bill not found'));
+        emit(const BillError(message: 'Bill not found'));
       }
     } catch (e) {
       emit(BillError(message: 'Failed to get bill: $e'));
@@ -96,11 +97,11 @@ class BillBloc extends Bloc<BillEvent, BillState> {
   ) async {
     emit(BillLoading());
     try {
-      final bills =
+      final List<BillModel> bills =
           billBox.values
-              .where((bill) => bill.tenantId == event.tenantId)
+              .where((BillModel bill) => bill.tenantId == event.tenantId)
               .toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            ..sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
       emit(BillLoaded(bills: bills));
     } catch (e) {
       emit(BillError(message: 'Failed to get bills: $e'));
@@ -113,11 +114,11 @@ class BillBloc extends Bloc<BillEvent, BillState> {
   ) async {
     emit(BillLoading());
     try {
-      final bills =
+      final List<BillModel> bills =
           billBox.values
-              .where((bill) => bill.propertyId == event.propertyId)
+              .where((BillModel bill) => bill.propertyId == event.propertyId)
               .toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            ..sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
       emit(BillLoaded(bills: bills));
     } catch (e) {
       emit(BillError(message: 'Failed to get bills: $e'));
@@ -130,15 +131,15 @@ class BillBloc extends Bloc<BillEvent, BillState> {
   ) async {
     emit(BillLoading());
     try {
-      final bills =
+      final List<BillModel> bills =
           billBox.values
               .where(
-                (bill) =>
+                (BillModel bill) =>
                     bill.createdAt.isAfter(event.startDate) &&
                     bill.createdAt.isBefore(event.endDate),
               )
               .toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            ..sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
       emit(BillLoaded(bills: bills));
     } catch (e) {
       emit(BillError(message: 'Failed to get bills: $e'));
@@ -151,9 +152,9 @@ class BillBloc extends Bloc<BillEvent, BillState> {
   ) async {
     emit(BillLoading());
     try {
-      final bill = billBox.get(event.billId);
+      final BillModel? bill = billBox.get(event.billId);
       if (bill != null) {
-        final updatedBill = bill.copyWith(
+        final BillModel updatedBill = bill.copyWith(
           status: PaymentStatus.paid,
           paidAmount: bill.totalAmount,
           paidDate: DateTime.now(),
@@ -161,14 +162,41 @@ class BillBloc extends Bloc<BillEvent, BillState> {
         );
         await billBox.put(updatedBill.id, updatedBill);
 
-        final bills = billBox.values.toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final List<BillModel> bills = billBox.values.toList()
+          ..sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
         emit(BillLoaded(bills: bills));
       } else {
-        emit(BillError(message: 'Bill not found'));
+        emit(const BillError(message: 'Bill not found'));
       }
     } catch (e) {
       emit(BillError(message: 'Failed to mark bill as paid: $e'));
+    }
+  }
+
+  Future<void> _onMarkBillAsUnpaid(
+    MarkBillAsUnpaid event,
+    Emitter<BillState> emit,
+  ) async {
+    emit(BillLoading());
+    try {
+      final BillModel? bill = billBox.get(event.billId);
+      if (bill != null) {
+        final BillModel updatedBill = bill.copyWith(
+          status: PaymentStatus.pending,
+          paidAmount: 0,
+          paidDate: null,
+          paymentMode: null,
+        );
+        await billBox.put(updatedBill.id, updatedBill);
+
+        final List<BillModel> bills = billBox.values.toList()
+          ..sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
+        emit(BillLoaded(bills: bills));
+      } else {
+        emit(const BillError(message: 'Bill not found'));
+      }
+    } catch (e) {
+      emit(BillError(message: 'Failed to mark bill as unpaid: $e'));
     }
   }
 
@@ -178,13 +206,13 @@ class BillBloc extends Bloc<BillEvent, BillState> {
   ) async {
     emit(BillLoading());
     try {
-      final bills =
+      final List<BillModel> bills =
           billBox.values
               .where(
-                (bill) => bill.isOverdue && bill.status != PaymentStatus.paid,
+                (BillModel bill) => bill.isOverdue && bill.status != PaymentStatus.paid,
               )
               .toList()
-            ..sort((a, b) => b.dueDate.compareTo(a.dueDate));
+            ..sort((BillModel a, BillModel b) => b.dueDate.compareTo(a.dueDate));
       emit(BillLoaded(bills: bills));
     } catch (e) {
       emit(BillError(message: 'Failed to get overdue bills: $e'));
@@ -197,15 +225,15 @@ class BillBloc extends Bloc<BillEvent, BillState> {
   ) async {
     emit(BillLoading());
     try {
-      final bills =
+      final List<BillModel> bills =
           billBox.values
               .where(
-                (bill) =>
+                (BillModel bill) =>
                     bill.status == PaymentStatus.pending ||
                     bill.status == PaymentStatus.partiallyPaid,
               )
               .toList()
-            ..sort((a, b) => b.dueDate.compareTo(a.dueDate));
+            ..sort((BillModel a, BillModel b) => b.dueDate.compareTo(a.dueDate));
       emit(BillLoaded(bills: bills));
     } catch (e) {
       emit(BillError(message: 'Failed to get pending bills: $e'));

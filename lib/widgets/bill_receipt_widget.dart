@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:nepali_utils/nepali_utils.dart';
+import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
@@ -9,23 +11,22 @@ import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class BillReceiptWidget extends StatelessWidget {
+
+  const BillReceiptWidget({
+    required this.bill, super.key,
+    this.padding = const EdgeInsets.all(28),
+  });
   final BillModel bill;
   final EdgeInsets padding;
 
-  const BillReceiptWidget({
-    super.key,
-    required this.bill,
-    this.padding = const EdgeInsets.all(28),
-  });
-
   @override
   Widget build(BuildContext context) {
-    final propertyBox = Hive.box<PropertyModel>(Constants.propertiesBox);
-    final tenantBox = Hive.box<TenantModel>(Constants.tenantsBox);
-    final l10n = L10n.of(context);
+    final Box<PropertyModel> propertyBox = Hive.box<PropertyModel>(Constants.propertiesBox);
+    final Box<TenantModel> tenantBox = Hive.box<TenantModel>(Constants.tenantsBox);
+    final L10n l10n = L10n.of(context);
 
-    final property = propertyBox.get(bill.propertyId);
-    final tenant = tenantBox.get(bill.tenantId);
+    final PropertyModel? property = propertyBox.get(bill.propertyId);
+    final TenantModel? tenant = tenantBox.get(bill.tenantId);
 
     if (property == null || tenant == null) {
       return const Center(child: Text('Data not found'));
@@ -33,8 +34,9 @@ class BillReceiptWidget extends StatelessWidget {
 
     String monthName;
     String dueDateStr;
+    final bool isBS = context.watch<SettingsCubit>().state == DateSystem.bs;
 
-    if (bill.dateSystem == DateSystem.bs) {
+    if (isBS) {
       monthName = NepaliDateFormat(
         'MMMM yyyy',
       ).format(DateTime(bill.year, bill.month, 15).toNepaliDateTime());
@@ -44,7 +46,7 @@ class BillReceiptWidget extends StatelessWidget {
     } else {
       monthName = DateFormat(
         'MMMM yyyy',
-      ).format(DateTime(bill.year, bill.month));
+      ).format(DateTime(bill.year, bill.month, 15));
       dueDateStr = DateFormat('dd MMM yyyy').format(bill.dueDate);
     }
 
@@ -56,7 +58,7 @@ class BillReceiptWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             // Top accent bar
             Container(
               width: double.infinity,
@@ -93,7 +95,7 @@ class BillReceiptWidget extends StatelessWidget {
             // Tenant info only
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 Text(
                   l10n.get('tenants').toUpperCase(),
                   style: const TextStyle(
@@ -120,7 +122,7 @@ class BillReceiptWidget extends StatelessWidget {
                 ),
                 if (tenant.citizenshipNumber.isNotEmpty)
                   Text(
-                    'Citizenship: ${tenant.citizenshipNumber}',
+                    '${l10n.get('citizenship')}: ${tenant.citizenshipNumber}',
                     style: const TextStyle(
                       fontSize: 10,
                       color: Color(0xFF64748B),
@@ -137,16 +139,16 @@ class BillReceiptWidget extends StatelessWidget {
             // Billing period
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              children: <Widget>[
                 Text(
-                  'Period: $monthName',
+                  '${l10n.get('billing_period')}: $monthName',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  'Due: $dueDateStr',
+                  '${l10n.get('due_date')}: $dueDateStr',
                   style: const TextStyle(
                     fontSize: 11,
                     color: Color(0xFF64748B),
@@ -166,7 +168,7 @@ class BillReceiptWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
               color: const Color(0xFFF8F9FA),
               child: Row(
-                children: [
+                children: <Widget>[
                   Expanded(
                     child: Text(
                       l10n.get('other_desc').toUpperCase(),
@@ -200,9 +202,9 @@ class BillReceiptWidget extends StatelessWidget {
               _chargeRow(
                 bill.electricityUnits != null
                     ? (bill.previousElectricityReading != null &&
-                            bill.currentElectricityReading != null)
-                        ? '${l10n.get('electricity')} (${bill.previousElectricityReading!.toStringAsFixed(0)}-${bill.currentElectricityReading!.toStringAsFixed(0)}: ${bill.electricityUnits!.toStringAsFixed(1)} ${l10n.get('units_label')})'
-                        : '${l10n.get('electricity')} (${bill.electricityUnits!.toStringAsFixed(1)} ${l10n.get('units_label')})'
+                              bill.currentElectricityReading != null)
+                          ? '${l10n.get('electricity')} (${bill.previousElectricityReading!.toStringAsFixed(0)}-${bill.currentElectricityReading!.toStringAsFixed(0)}: ${bill.electricityUnits!.toStringAsFixed(1)} ${l10n.get('units_label')})'
+                          : '${l10n.get('electricity')} (${bill.electricityUnits!.toStringAsFixed(1)} ${l10n.get('units_label')})'
                     : l10n.get('electricity'),
                 '${l10n.get('currency')}${bill.electricityCharges.toStringAsFixed(0)}',
               ),
@@ -210,9 +212,9 @@ class BillReceiptWidget extends StatelessWidget {
               _chargeRow(
                 bill.waterUnits != null
                     ? (bill.previousWaterReading != null &&
-                            bill.currentWaterReading != null)
-                        ? '${l10n.get('water')} (${bill.previousWaterReading!.toStringAsFixed(0)}-${bill.currentWaterReading!.toStringAsFixed(0)}: ${bill.waterUnits!.toStringAsFixed(1)} ${l10n.get('units_label')})'
-                        : '${l10n.get('water')} (${bill.waterUnits!.toStringAsFixed(1)} ${l10n.get('units_label')})'
+                              bill.currentWaterReading != null)
+                          ? '${l10n.get('water')} (${bill.previousWaterReading!.toStringAsFixed(0)}-${bill.currentWaterReading!.toStringAsFixed(0)}: ${bill.waterUnits!.toStringAsFixed(1)} ${l10n.get('units_label')})'
+                          : '${l10n.get('water')} (${bill.waterUnits!.toStringAsFixed(1)} ${l10n.get('units_label')})'
                     : l10n.get('water'),
                 '${l10n.get('currency')}${bill.waterCharges.toStringAsFixed(0)}',
               ),
@@ -228,12 +230,12 @@ class BillReceiptWidget extends StatelessWidget {
                     : l10n.get('other'),
                 '${l10n.get('currency')}${bill.otherCharges.toStringAsFixed(0)}',
               ),
-            for (final entry in bill.dynamicCharges.entries)
+            for (final MapEntry<String, double> entry in bill.dynamicCharges.entries)
               _chargeRow(
                 entry.key,
                 '${l10n.get('currency')}${entry.value.toStringAsFixed(0)}',
               ),
-            for (final entry in bill.dynamicDeductions.entries)
+            for (final MapEntry<String, double> entry in bill.dynamicDeductions.entries)
               _chargeRow(
                 entry.key,
                 '-${l10n.get('currency')}${entry.value.toStringAsFixed(0)}',
@@ -255,10 +257,13 @@ class BillReceiptWidget extends StatelessWidget {
               ),
               child: Text.rich(
                 TextSpan(
-                  children: [
-                    const TextSpan(
-                      text: 'TOTAL  ',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  children: <InlineSpan>[
+                    TextSpan(
+                      text: '${l10n.get('total_amount_label').toUpperCase()}  ',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                     TextSpan(
                       text:
@@ -274,13 +279,13 @@ class BillReceiptWidget extends StatelessWidget {
               ),
             ),
 
-            if (bill.paidAmount > 0) ...[
+            if (bill.paidAmount > 0) ...<Widget>[
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+                children: <Widget>[
                   Text(
-                    'Paid: ${Constants.currency}${bill.paidAmount.toStringAsFixed(0)}',
+                    '${l10n.get('paid_amt')}: ${l10n.get('currency')}${bill.paidAmount.toStringAsFixed(0)}',
                     style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF16A34A),
@@ -288,7 +293,7 @@ class BillReceiptWidget extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Outstanding: ${Constants.currency}${bill.outstandingAmount.toStringAsFixed(0)}',
+                    '${l10n.get('outstanding')}: ${l10n.get('currency')}${bill.outstandingAmount.toStringAsFixed(0)}',
                     style: TextStyle(
                       fontSize: 12,
                       color: bill.outstandingAmount > 0
@@ -303,7 +308,7 @@ class BillReceiptWidget extends StatelessWidget {
 
             // Status badge
             const SizedBox(height: 10),
-            _statusBadge(bill.status),
+            _statusBadge(bill.status, l10n),
 
             const SizedBox(height: 20),
 
@@ -313,10 +318,10 @@ class BillReceiptWidget extends StatelessWidget {
 
             // Footer
             const SizedBox(height: 10),
-            const Center(
+            Center(
               child: Text(
-                'Thank you!',
-                style: TextStyle(
+                l10n.get('thank_you'),
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF0F172A),
@@ -337,8 +342,7 @@ class BillReceiptWidget extends StatelessWidget {
     );
   }
 
-  Widget _chargeRow(String label, String amount) {
-    return Container(
+  Widget _chargeRow(String label, String amount) => Container(
       padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
       decoration: const BoxDecoration(
         border: Border(
@@ -346,7 +350,7 @@ class BillReceiptWidget extends StatelessWidget {
         ),
       ),
       child: Row(
-        children: [
+        children: <Widget>[
           Expanded(child: Text(label, style: const TextStyle(fontSize: 12))),
           Text(
             amount,
@@ -359,25 +363,24 @@ class BillReceiptWidget extends StatelessWidget {
         ],
       ),
     );
-  }
 
-  Widget _statusBadge(PaymentStatus status) {
+  Widget _statusBadge(PaymentStatus status, L10n l10n) {
     Color color;
     String text;
 
     switch (status) {
       case PaymentStatus.paid:
         color = const Color(0xFF16A34A);
-        text = 'PAID';
+        text = l10n.get('status_paid');
       case PaymentStatus.pending:
         color = const Color(0xFFF59E0B);
-        text = 'PENDING';
+        text = l10n.get('status_pending');
       case PaymentStatus.overdue:
         color = const Color(0xFFDC2626);
-        text = 'OVERDUE';
+        text = l10n.get('status_overdue');
       case PaymentStatus.partiallyPaid:
         color = const Color(0xFF2563EB);
-        text = 'PARTIALLY PAID';
+        text = l10n.get('status_partial');
     }
 
     return Container(

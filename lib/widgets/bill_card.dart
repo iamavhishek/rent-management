@@ -8,28 +8,34 @@ import 'package:intl/intl.dart';
 import 'package:nepali_utils/nepali_utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:rent_bill_maker/bloc/bill/bill_bloc.dart';
+import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
+import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
+import 'package:rent_bill_maker/screens/create_bill_screen.dart';
 import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 import 'package:rent_bill_maker/widgets/bill_preview_overlay.dart';
-import 'package:rent_bill_maker/screens/create_bill_screen.dart';
 import 'package:share_plus/share_plus.dart';
 
 class BillCard extends StatelessWidget {
+  const BillCard({required this.bill, super.key});
   final BillModel bill;
-
-  const BillCard({super.key, required this.bill});
 
   @override
   Widget build(BuildContext context) {
-    final tenantState = context.watch<TenantBloc>().state;
-    final l10n = L10n.of(context);
+    final TenantState tenantState = context.watch<TenantBloc>().state;
+    final L10n l10n = L10n.of(context);
     String tenantName = '';
     if (tenantState is TenantLoaded) {
-      final tenant = tenantState.tenants.where((t) => t.id == bill.tenantId);
+      final Iterable<TenantModel> tenant = tenantState.tenants.where(
+        (TenantModel t) => t.id == bill.tenantId,
+      );
       if (tenant.isNotEmpty) tenantName = tenant.first.name;
     }
+
+    final DateSystem dateSystem = context.watch<SettingsCubit>().state;
+    final bool isBS = dateSystem == DateSystem.bs;
 
     return Card(
       child: InkWell(
@@ -39,9 +45,9 @@ class BillCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               Row(
-                children: [
+                children: <Widget>[
                   Container(
                     width: 42,
                     height: 42,
@@ -59,7 +65,7 @@ class BillCard extends StatelessWidget {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         if (tenantName.isNotEmpty)
                           Text(
                             tenantName,
@@ -69,16 +75,17 @@ class BillCard extends StatelessWidget {
                             ),
                           ),
                         Text(
-                          bill.dateSystem == DateSystem.bs
-                              ? NepaliDateFormat(
-                                  'MMMM yyyy',
-                                ).format(
-                                  DateTime(bill.year, bill.month, 15)
-                                      .toNepaliDateTime(),
+                          isBS
+                              ? NepaliDateFormat('MMMM yyyy').format(
+                                  DateTime(
+                                    bill.year,
+                                    bill.month,
+                                    15,
+                                  ).toNepaliDateTime(),
                                 )
                               : DateFormat(
                                   'MMMM yyyy',
-                                ).format(DateTime(bill.year, bill.month)),
+                                ).format(DateTime(bill.year, bill.month, 15)),
                           style: TextStyle(
                             fontSize: 12,
                             color: Theme.of(context).textTheme.bodySmall?.color,
@@ -92,11 +99,11 @@ class BillCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Row(
-                children: [
+                children: <Widget>[
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         Text(
                           '${l10n.get('currency')}${bill.totalAmount.toStringAsFixed(0)}',
                           style: TextStyle(
@@ -120,13 +127,13 @@ class BillCard extends StatelessWidget {
                   ),
                   Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                    children: <Widget>[
                       _iconBtn(
                         context,
                         Icons.share_outlined,
                         () => _shareBill(context),
                       ),
-                      if (bill.status != PaymentStatus.paid) ...[
+                      if (bill.status != PaymentStatus.paid) ...<Widget>[
                         const SizedBox(width: 4),
                         _iconBtn(
                           context,
@@ -151,26 +158,24 @@ class BillCard extends StatelessWidget {
     IconData icon,
     VoidCallback onTap, {
     Color? color,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(
-            icon,
-            size: 20,
-            color: color ?? Theme.of(context).textTheme.bodySmall?.color,
-          ),
+  }) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(
+          icon,
+          size: 20,
+          color: color ?? Theme.of(context).textTheme.bodySmall?.color,
         ),
       ),
-    );
-  }
+    ),
+  );
 
   Widget _statusBadge(PaymentStatus status, L10n l10n) {
-    final color = _statusColor(status);
+    final Color color = _statusColor(status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -190,17 +195,18 @@ class BillCard extends StatelessWidget {
     );
   }
 
-  void _markAsPaid(BuildContext context, [L10n? l10n]) {
+  Future<void> _markAsPaid(BuildContext context, [L10n? l10n]) async {
     l10n ??= L10n.of(context);
-    showDialog(
+    final BillBloc billBloc = context.read<BillBloc>();
+    await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (BuildContext ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(l10n!.get('mark_paid_confirm')),
         content: Text(
           '${l10n.get('currency')}${bill.totalAmount.toStringAsFixed(0)} ${l10n.get('is_paid_question')}',
         ),
-        actions: [
+        actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(l10n.get('cancel')),
@@ -208,7 +214,7 @@ class BillCard extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context.read<BillBloc>().add(
+              billBloc.add(
                 MarkBillAsPaid(billId: bill.id, paymentMode: 'Cash'),
               );
             },
@@ -219,16 +225,49 @@ class BillCard extends StatelessWidget {
     );
   }
 
+  Future<void> _markAsUnpaid(BuildContext context, [L10n? l10n]) async {
+    l10n ??= L10n.of(context);
+    final BillBloc billBloc = context.read<BillBloc>();
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(l10n!.get('mark_unpaid_confirm')),
+        content: Text(
+          '${l10n.get('currency')}${bill.totalAmount.toStringAsFixed(0)} ${l10n.get('is_unpaid_question')}',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.get('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              billBloc.add(MarkBillAsUnpaid(bill.id));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+            ),
+            child: Text(l10n.get('yes_unpaid')),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showBillDetails(BuildContext context, String tenantName) {
-    final l10n = L10n.of(context);
-    showModalBottomSheet(
+    final L10n l10n = L10n.of(context);
+    final NavigatorState navigator = Navigator.of(context);
+    final bool isBS = context.read<SettingsCubit>().state == DateSystem.bs;
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
+      builder: (BuildContext ctx) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -239,7 +278,7 @@ class BillCard extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 Center(
                   child: Container(
                     width: 36,
@@ -253,7 +292,7 @@ class BillCard extends StatelessWidget {
                 const SizedBox(height: 14),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+                  children: <Widget>[
                     Text(
                       l10n.get('bill_details'),
                       style: const TextStyle(
@@ -268,32 +307,29 @@ class BillCard extends StatelessWidget {
                 ListView(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  children: [
+                  children: <Widget>[
                     if (tenantName.isNotEmpty)
-                      _detailRow(context, l10n.get('tenants'), tenantName),
+                      _detailRow(ctx, l10n.get('tenants'), tenantName),
+                    _detailRow(ctx, l10n.get('bill_number'), bill.billNumber),
                     _detailRow(
-                      context,
-                      l10n.get('bill_number'),
-                      bill.billNumber,
-                    ),
-                    _detailRow(
-                      context,
+                      ctx,
                       l10n.get('billing_period'),
-                      bill.dateSystem == DateSystem.bs
-                          ? NepaliDateFormat(
-                              'MMMM yyyy',
-                            ).format(
-                              DateTime(bill.year, bill.month, 15)
-                                  .toNepaliDateTime(),
+                      isBS
+                          ? NepaliDateFormat('MMMM yyyy').format(
+                              DateTime(
+                                bill.year,
+                                bill.month,
+                                15,
+                              ).toNepaliDateTime(),
                             )
                           : DateFormat(
                               'MMMM yyyy',
                             ).format(DateTime(bill.year, bill.month)),
                     ),
                     _detailRow(
-                      context,
+                      ctx,
                       l10n.get('due_date_label'),
-                      bill.dateSystem == DateSystem.bs
+                      isBS
                           ? NepaliDateFormat(
                               'dd MMM yyyy',
                             ).format(bill.dueDate.toNepaliDateTime())
@@ -301,101 +337,99 @@ class BillCard extends StatelessWidget {
                     ),
                     const Divider(height: 20),
                     _detailRow(
-                      context,
+                      ctx,
                       l10n.get('monthly_rent'),
                       '${l10n.get('currency')}${bill.rentAmount.toStringAsFixed(0)}',
                     ),
                     if (bill.electricityCharges > 0)
                       _detailRow(
-                        context,
+                        ctx,
                         bill.electricityUnits != null
                             ? (bill.previousElectricityReading != null &&
-                                    bill.currentElectricityReading != null)
-                                ? 'Electricity (${bill.previousElectricityReading!.toStringAsFixed(0)}-${bill.currentElectricityReading!.toStringAsFixed(0)}: ${bill.electricityUnits!.toStringAsFixed(1)}u)'
-                                : 'Electricity (${bill.electricityUnits!.toStringAsFixed(1)} units)'
-                            : 'Electricity',
+                                      bill.currentElectricityReading != null)
+                                  ? '${l10n.get('electricity')} (${bill.previousElectricityReading!.toStringAsFixed(0)}-${bill.currentElectricityReading!.toStringAsFixed(0)}: ${bill.electricityUnits!.toStringAsFixed(1)}${l10n.get('units_label')})'
+                                  : '${l10n.get('electricity')} (${bill.electricityUnits!.toStringAsFixed(1)} ${l10n.get('units_label')})'
+                            : l10n.get('electricity'),
                         '${l10n.get('currency')}${bill.electricityCharges.toStringAsFixed(0)}',
                       ),
                     if (bill.waterCharges > 0)
                       _detailRow(
-                        context,
+                        ctx,
                         bill.waterUnits != null
                             ? (bill.previousWaterReading != null &&
-                                    bill.currentWaterReading != null)
-                                ? 'Water (${bill.previousWaterReading!.toStringAsFixed(0)}-${bill.currentWaterReading!.toStringAsFixed(0)}: ${bill.waterUnits!.toStringAsFixed(1)}u)'
-                                : 'Water (${bill.waterUnits!.toStringAsFixed(1)} units)'
-                            : 'Water',
+                                      bill.currentWaterReading != null)
+                                  ? '${l10n.get('water')} (${bill.previousWaterReading!.toStringAsFixed(0)}-${bill.currentWaterReading!.toStringAsFixed(0)}: ${bill.waterUnits!.toStringAsFixed(1)}${l10n.get('units_label')})'
+                                  : '${l10n.get('water')} (${bill.waterUnits!.toStringAsFixed(1)} ${l10n.get('units_label')})'
+                            : l10n.get('water'),
                         '${l10n.get('currency')}${bill.waterCharges.toStringAsFixed(0)}',
                       ),
                     if (bill.internetCharges > 0)
                       _detailRow(
-                        context,
+                        ctx,
                         l10n.get('internet'),
                         '${Constants.currency}${bill.internetCharges.toStringAsFixed(0)}',
                       ),
                     if (bill.otherCharges > 0)
                       _detailRow(
-                        context,
+                        ctx,
                         bill.otherChargesDescription.isNotEmpty
                             ? bill.otherChargesDescription
                             : l10n.get('other'),
                         '${Constants.currency}${bill.otherCharges.toStringAsFixed(0)}',
                       ),
                     ...bill.dynamicCharges.entries.map(
-                      (e) => _detailRow(
-                        context,
+                      (MapEntry<String, double> e) => _detailRow(
+                        ctx,
                         e.key,
                         '${Constants.currency}${e.value.toStringAsFixed(0)}',
                       ),
                     ),
                     ...bill.dynamicDeductions.entries.map(
-                      (e) => _detailRow(
-                        context,
+                      (MapEntry<String, double> e) => _detailRow(
+                        ctx,
                         e.key,
                         '-${Constants.currency}${e.value.toStringAsFixed(0)}',
                       ),
                     ),
                     if (bill.discount > 0)
                       _detailRow(
-                        context,
+                        ctx,
                         l10n.get('discount_label'),
                         '-${Constants.currency}${bill.discount.toStringAsFixed(0)}',
                       ),
                     const Divider(height: 20),
                     _detailRow(
-                      context,
+                      ctx,
                       l10n.get('total_amount_label'),
                       '${Constants.currency}${bill.totalAmount.toStringAsFixed(0)}',
                       isBold: true,
                     ),
-                    if (bill.paidAmount > 0) ...[
+                    if (bill.paidAmount > 0) ...<Widget>[
                       _detailRow(
-                        context,
+                        ctx,
                         l10n.get('paid_amt'),
                         '${Constants.currency}${bill.paidAmount.toStringAsFixed(0)}',
                       ),
                       _detailRow(
-                        context,
+                        ctx,
                         l10n.get('remaining'),
                         '${Constants.currency}${bill.outstandingAmount.toStringAsFixed(0)}',
                         isBold: true,
                       ),
                     ],
                     if (bill.notes != null && bill.notes!.isNotEmpty)
-                      _detailRow(context, l10n.get('notes'), bill.notes!),
+                      _detailRow(ctx, l10n.get('notes'), bill.notes!),
                     const SizedBox(height: 24),
                     Row(
-                      children: [
+                      children: <Widget>[
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CreateBillScreen(
-                                    bill: bill,
-                                  ),
+                              navigator.pop();
+                              navigator.push<bool>(
+                                MaterialPageRoute<bool>(
+                                  builder: (BuildContext ctx) =>
+                                      CreateBillScreen(bill: bill),
                                 ),
                               );
                             },
@@ -415,7 +449,7 @@ class BillCard extends StatelessWidget {
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () {
-                              Navigator.pop(context);
+                              navigator.pop();
                               _confirmDelete(context, l10n);
                             },
                             icon: const Icon(Icons.delete_outline, size: 20),
@@ -435,7 +469,7 @@ class BillCard extends StatelessWidget {
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
                       onPressed: () {
-                        Navigator.pop(context);
+                        navigator.pop();
                         _shareBill(context);
                       },
                       icon: const Icon(Icons.share, size: 20),
@@ -448,13 +482,26 @@ class BillCard extends StatelessWidget {
                     if (bill.status != PaymentStatus.paid)
                       ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.pop(context);
+                          navigator.pop();
                           _markAsPaid(context, l10n);
                         },
                         icon: const Icon(Icons.check_circle_outline, size: 20),
                         label: Text(l10n.get('mark_paid')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF16A34A),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    if (bill.status == PaymentStatus.paid)
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          navigator.pop();
+                          _markAsUnpaid(context, l10n);
+                        },
+                        icon: const Icon(Icons.history, size: 20),
+                        label: Text(l10n.get('mark_unpaid')),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFDC2626),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                       ),
@@ -473,38 +520,38 @@ class BillCard extends StatelessWidget {
     String label,
     String value, {
     bool isBold = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: Theme.of(context).textTheme.bodySmall?.color,
-            ),
+  }) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: Theme.of(context).textTheme.bodySmall?.color,
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-            ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 
   void _confirmDelete(BuildContext context, L10n l10n) {
-    showDialog(
+    final BillBloc billBloc = context.read<BillBloc>();
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (BuildContext ctx) => AlertDialog(
         title: Text(l10n.get('delete_bill')),
         content: Text(l10n.get('delete_bill_msg')),
-        actions: [
+        actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(l10n.get('cancel')),
@@ -512,8 +559,8 @@ class BillCard extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context.read<BillBloc>().add(DeleteBill(bill.id));
-              ScaffoldMessenger.of(context).showSnackBar(
+              billBloc.add(DeleteBill(bill.id));
+              messenger.showSnackBar(
                 SnackBar(content: Text(l10n.get('delete_bill'))),
               );
             },
@@ -528,29 +575,29 @@ class BillCard extends StatelessWidget {
   }
 
   Future<void> _shareBill(BuildContext context) async {
-    final l10n = L10n.of(context);
+    final L10n l10n = L10n.of(context);
     try {
       // Navigate to a full-screen overlay where the bill can be captured
-      final result = await Navigator.of(context).push(
-        MaterialPageRoute(
+      final dynamic result = await Navigator.of(context).push<Uint8List?>(
+        MaterialPageRoute<Uint8List?>(
           builder: (_) => BillPreviewOverlay(bill: bill),
           fullscreenDialog: true,
         ),
       );
       if (result != null && result is Uint8List) {
-        final dir = await getApplicationDocumentsDirectory();
-        final fileName =
+        final Directory dir = await getApplicationDocumentsDirectory();
+        final String fileName =
             'rent_bill_${bill.billNumber.replaceAll('/', '_')}.png';
-        final file = File('${dir.path}/$fileName');
+        final File file = File('${dir.path}/$fileName');
         await file.writeAsBytes(result);
 
         // Update bill with image path
-        final updatedBill = bill.copyWith(pdfPath: file.path);
-        Hive.box<BillModel>(Constants.billsBox).put(bill.id, updatedBill);
+        final BillModel updatedBill = bill.copyWith(pdfPath: file.path);
+        await Hive.box<BillModel>(Constants.billsBox).put(bill.id, updatedBill);
 
         await SharePlus.instance.share(
           ShareParams(
-            files: [XFile(file.path)],
+            files: <XFile>[XFile(file.path)],
             text: '${l10n.get('share_bill')} - ${bill.billNumber}',
           ),
         );

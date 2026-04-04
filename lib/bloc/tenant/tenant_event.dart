@@ -4,47 +4,47 @@ abstract class TenantEvent extends Equatable {
   const TenantEvent();
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => <Object?>[];
 }
 
 class LoadTenants extends TenantEvent {}
 
 class AddTenant extends TenantEvent {
-  final TenantModel tenant;
   const AddTenant(this.tenant);
+  final TenantModel tenant;
 
   @override
-  List<Object?> get props => [tenant];
+  List<Object?> get props => <Object?>[tenant];
 }
 
 class UpdateTenant extends TenantEvent {
-  final TenantModel tenant;
   const UpdateTenant(this.tenant);
+  final TenantModel tenant;
 
   @override
-  List<Object?> get props => [tenant];
+  List<Object?> get props => <Object?>[tenant];
 }
 
 class DeleteTenant extends TenantEvent {
-  final String id;
   const DeleteTenant(this.id);
+  final String id;
 
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props => <Object?>[id];
 }
 
 class GetTenantById extends TenantEvent {
-  final String id;
   const GetTenantById(this.id);
+  final String id;
 
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props => <Object?>[id];
 }
 
 class GetTenantsByProperty extends TenantEvent {
-  final String propertyId;
   const GetTenantsByProperty(this.propertyId);
+  final String propertyId;
 
   @override
-  List<Object?> get props => [propertyId];
+  List<Object?> get props => <Object?>[propertyId];
 }

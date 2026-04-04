@@ -4,27 +4,26 @@ import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class LanguageCubit extends Cubit<AppLanguage> {
-  static const _languageKey = 'app_language';
-
   LanguageCubit() : super(_loadSavedLanguage());
+  static const String _languageKey = 'app_language';
 
   static AppLanguage _loadSavedLanguage() {
-    final box = Hive.box(Constants.settingsBox);
-    final saved = box.get(_languageKey, defaultValue: 'ne') as String;
+    final Box<dynamic> box = Hive.box<dynamic>(Constants.settingsBox);
+    final String saved = box.get(_languageKey, defaultValue: 'ne') as String;
     return saved == 'en' ? AppLanguage.en : AppLanguage.ne;
   }
 
   void toggleLanguage() {
-    final newLang =
-        state == AppLanguage.ne ? AppLanguage.en : AppLanguage.ne;
+    final AppLanguage newLang = state == AppLanguage.ne
+        ? AppLanguage.en
+        : AppLanguage.ne;
     setLanguage(newLang);
   }
 
   void setLanguage(AppLanguage language) {
-    Hive.box(Constants.settingsBox).put(
-      _languageKey,
-      language == AppLanguage.en ? 'en' : 'ne',
-    );
+    Hive.box<dynamic>(
+      Constants.settingsBox,
+    ).put(_languageKey, language == AppLanguage.en ? 'en' : 'ne');
     emit(language);
   }
 }

@@ -74,8 +74,8 @@ class PropertyModelAdapter extends TypeAdapter<PropertyModel> {
 // JsonSerializableGenerator
 // **************************************************************************
 
-PropertyModel _$PropertyModelFromJson(Map<String, dynamic> json) =>
-    PropertyModel(
+_PropertyModel _$PropertyModelFromJson(Map<String, dynamic> json) =>
+    _PropertyModel(
       id: json['id'] as String,
       name: json['name'] as String,
       address: json['address'] as String,
@@ -89,7 +89,7 @@ PropertyModel _$PropertyModelFromJson(Map<String, dynamic> json) =>
       isActive: json['isActive'] as bool,
     );
 
-Map<String, dynamic> _$PropertyModelToJson(PropertyModel instance) =>
+Map<String, dynamic> _$PropertyModelToJson(_PropertyModel instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,

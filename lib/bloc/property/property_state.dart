@@ -4,7 +4,7 @@ abstract class PropertyState extends Equatable {
   const PropertyState();
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => <Object?>[];
 }
 
 class PropertyInitial extends PropertyState {}
@@ -12,17 +12,17 @@ class PropertyInitial extends PropertyState {}
 class PropertyLoading extends PropertyState {}
 
 class PropertyLoaded extends PropertyState {
-  final List<PropertyModel> properties;
   const PropertyLoaded({required this.properties});
+  final List<PropertyModel> properties;
 
   @override
-  List<Object?> get props => [properties];
+  List<Object?> get props => <Object?>[properties];
 }
 
 class PropertyError extends PropertyState {
-  final String message;
   const PropertyError({required this.message});
+  final String message;
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => <Object?>[message];
 }

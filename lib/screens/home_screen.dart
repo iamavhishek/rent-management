@@ -25,8 +25,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
-    final screens = [
+    final L10n l10n = L10n.of(context);
+    final List<Widget> screens = <Widget>[
       const DashboardScreen(),
       const HistoryScreen(),
       const ReportsScreen(),
@@ -35,13 +35,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: screens),
-      floatingActionButton: [0, 1].contains(_currentIndex)
+      floatingActionButton: <int>[0, 1].contains(_currentIndex)
           ? FloatingActionButton(
               onPressed: () {
-                Navigator.push(
+                Navigator.push<bool>(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const CreateBillScreen(),
+                  MaterialPageRoute<bool>(
+                    builder: (BuildContext context) => const CreateBillScreen(),
                   ),
                 );
               },
@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
           : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
+        onDestinationSelected: (int index) {
           if (_currentIndex == index && context.mounted && _currentIndex == 0) {
             // Refresh dashboard on re-tap
           }
@@ -58,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         height: 68,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: [
+        destinations: <Widget>[
           NavigationDestination(
             icon: const Icon(Icons.dashboard_outlined, size: 24),
             selectedIcon: const Icon(Icons.dashboard, size: 24),
@@ -90,7 +90,7 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final L10n l10n = L10n.of(context);
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: () async {
@@ -99,14 +99,14 @@ class DashboardScreen extends StatelessWidget {
           context.read<BillBloc>().add(LoadBills());
         },
         child: CustomScrollView(
-          slivers: [
+          slivers: <Widget>[
             // Header
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     Text(
                       l10n.get('greeting'),
                       style: Theme.of(context).textTheme.headlineMedium,
@@ -126,14 +126,14 @@ class DashboardScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
                 child: BlocBuilder<BillBloc, BillState>(
-                  builder: (context, state) {
+                  builder: (BuildContext context, BillState state) {
                     int propCount = 0;
                     int tenantCount = 0;
                     double pendingAmt = 0;
                     double overdueAmt = 0;
 
-                    final propState = context.watch<PropertyBloc>().state;
-                    final tenantState = context.watch<TenantBloc>().state;
+                    final PropertyState propState = context.watch<PropertyBloc>().state;
+                    final TenantState tenantState = context.watch<TenantBloc>().state;
 
                     if (propState is PropertyLoaded) {
                       propCount = propState.properties.length;
@@ -142,7 +142,7 @@ class DashboardScreen extends StatelessWidget {
                       tenantCount = tenantState.tenants.length;
                     }
                     if (state is BillLoaded) {
-                      for (final b in state.bills) {
+                      for (final BillModel b in state.bills) {
                         if (b.status == PaymentStatus.pending ||
                             b.status == PaymentStatus.partiallyPaid) {
                           pendingAmt += b.outstandingAmount;
@@ -160,13 +160,12 @@ class DashboardScreen extends StatelessWidget {
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                       childAspectRatio: 1.3,
-                      children: [
+                      children: <Widget>[
                         _StatTile(
                           icon: Icons.home_work_outlined,
                           label: l10n.get('properties'),
                           value: '$propCount',
                           color: AppTheme.primary,
-                          iconBg: 0xFFE0E7FF,
                         ),
                         _StatTile(
                           icon: Icons.people_alt_outlined,
@@ -204,7 +203,7 @@ class DashboardScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+                  children: <Widget>[
                     Text(
                       l10n.get('recent_bills'),
                       style: Theme.of(context).textTheme.titleLarge,
@@ -228,7 +227,7 @@ class DashboardScreen extends StatelessWidget {
 
             // Recent Bills List
             BlocBuilder<BillBloc, BillState>(
-              builder: (context, state) {
+              builder: (BuildContext context, BillState state) {
                 if (state is BillLoaded) {
                   if (state.bills.isEmpty) {
                     return SliverFillRemaining(
@@ -236,7 +235,7 @@ class DashboardScreen extends StatelessWidget {
                       child: Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
+                          children: <Widget>[
                             Icon(
                               Icons.receipt_long_outlined,
                               size: 56,
@@ -264,14 +263,14 @@ class DashboardScreen extends StatelessWidget {
                     );
                   }
 
-                  final recentBills = state.bills.take(5).toList();
+                  final List<BillModel> recentBills = state.bills.take(5).toList();
                   return SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList.separated(
                       itemCount: recentBills.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final bill = recentBills[index];
+                      itemBuilder: (BuildContext context, int index) {
+                        final BillModel bill = recentBills[index];
                         return ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: BillCard(bill: bill),
@@ -286,12 +285,17 @@ class DashboardScreen extends StatelessWidget {
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        children: <Widget>[
+                          const Icon(
+                            Icons.error_outline,
+                            color: Colors.red,
+                            size: 48,
+                          ),
                           const SizedBox(height: 16),
                           Text(state.message, textAlign: TextAlign.center),
                           TextButton(
-                            onPressed: () => context.read<BillBloc>().add(LoadBills()),
+                            onPressed: () =>
+                                context.read<BillBloc>().add(LoadBills()),
                             child: const Text('पुन: प्रयास गर्नुहोस्'),
                           ),
                         ],
@@ -299,7 +303,7 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   );
                 }
-                
+
                 return const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator()),
                 );
@@ -315,11 +319,6 @@ class DashboardScreen extends StatelessWidget {
 }
 
 class _StatTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-  final int iconBg;
 
   const _StatTile({
     required this.icon,
@@ -328,16 +327,20 @@ class _StatTile extends StatelessWidget {
     required this.color,
     this.iconBg = 0xFFE0E7FF,
   });
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final int iconBg;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
+  Widget build(BuildContext context) => Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Color(iconBg)),
-        boxShadow: [
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
             offset: const Offset(0, 2),
@@ -348,7 +351,7 @@ class _StatTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+        children: <Widget>[
           Container(
             width: 36,
             height: 36,
@@ -382,5 +385,4 @@ class _StatTile extends StatelessWidget {
         ],
       ),
     );
-  }
 }

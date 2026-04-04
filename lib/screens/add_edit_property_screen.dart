@@ -5,15 +5,15 @@ import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class AddEditPropertyScreen extends StatefulWidget {
-  final PropertyModel? property;
   const AddEditPropertyScreen({super.key, this.property});
+  final PropertyModel? property;
 
   @override
   State<AddEditPropertyScreen> createState() => _AddEditPropertyScreenState();
 }
 
 class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _addressController;
   late TextEditingController _unitController;
@@ -62,8 +62,8 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.property != null;
-    final l10n = L10n.of(context);
+    final bool isEdit = widget.property != null;
+    final L10n l10n = L10n.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -75,15 +75,15 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
       body: Form(
         key: _formKey,
         child: Column(
-          children: [
+          children: <Widget>[
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(16),
-                children: [
+                children: <Widget>[
                   _formCard(
                     title: l10n.get('property_details'),
                     icon: Icons.home_work_outlined,
-                    children: [
+                    children: <Widget>[
                       TextFormField(
                         controller: _nameController,
                         decoration: InputDecoration(
@@ -91,7 +91,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                           hintText: l10n.get('property_name_hint'),
                           prefixIcon: const Icon(Icons.home, size: 20),
                         ),
-                        validator: (v) => v == null || v.isEmpty
+                        validator: (String? v) => v == null || v.isEmpty
                             ? l10n.get('required')
                             : null,
                       ),
@@ -103,7 +103,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                           hintText: l10n.get('address_hint'),
                           prefixIcon: const Icon(Icons.location_on, size: 20),
                         ),
-                        validator: (v) => v == null || v.isEmpty
+                        validator: (String? v) => v == null || v.isEmpty
                             ? l10n.get('required')
                             : null,
                       ),
@@ -126,10 +126,10 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                     title:
                         '${l10n.get('monthly_rent')} & ${l10n.get('deposit_amount')}',
                     icon: Icons.account_balance_wallet_outlined,
-                    children: [
+                    children: <Widget>[
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           Expanded(
                             child: TextFormField(
                               controller: _rentController,
@@ -142,7 +142,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                                 ),
                               ),
                               keyboardType: TextInputType.number,
-                              validator: (v) => v == null || v.isEmpty
+                              validator: (String? v) => v == null || v.isEmpty
                                   ? l10n.get('required')
                                   : null,
                             ),
@@ -167,7 +167,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                   _formCard(
                     title: l10n.get('owner_details'),
                     icon: Icons.person_outline,
-                    children: [
+                    children: <Widget>[
                       TextFormField(
                         controller: _ownerNameController,
                         decoration: InputDecoration(
@@ -175,7 +175,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                           hintText: l10n.get('full_name_hint'),
                           prefixIcon: const Icon(Icons.person, size: 20),
                         ),
-                        validator: (v) => v == null || v.isEmpty
+                        validator: (String? v) => v == null || v.isEmpty
                             ? l10n.get('required')
                             : null,
                       ),
@@ -188,7 +188,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                           prefixIcon: const Icon(Icons.phone, size: 20),
                         ),
                         keyboardType: TextInputType.phone,
-                        validator: (v) => v == null || v.isEmpty
+                        validator: (String? v) => v == null || v.isEmpty
                             ? l10n.get('required')
                             : null,
                       ),
@@ -204,7 +204,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                boxShadow: [
+                boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
                     offset: const Offset(0, -4),
@@ -241,15 +241,14 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
     required String title,
     required IconData icon,
     required List<Widget> children,
-  }) {
-    return Card(
+  }) => Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             Row(
-              children: [
+              children: <Widget>[
                 Icon(icon, size: 18, color: const Color(0xFF2563EB)),
                 const SizedBox(width: 8),
                 Text(
@@ -267,12 +266,11 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
         ),
       ),
     );
-  }
 
   void _saveProperty() {
-    final l10n = L10n.of(context);
+    final L10n l10n = L10n.of(context);
     if (_formKey.currentState!.validate()) {
-      final property =
+      final PropertyModel property =
           widget.property?.copyWith(
             name: _nameController.text.trim(),
             address: _addressController.text.trim(),

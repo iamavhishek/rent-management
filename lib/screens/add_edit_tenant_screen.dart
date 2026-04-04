@@ -8,22 +8,24 @@ import 'package:intl/intl.dart';
 import 'package:nepali_date_picker/nepali_date_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
+import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
+import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class AddEditTenantScreen extends StatefulWidget {
-  final TenantModel? tenant;
   const AddEditTenantScreen({super.key, this.tenant});
+  final TenantModel? tenant;
 
   @override
   State<AddEditTenantScreen> createState() => _AddEditTenantScreenState();
 }
 
 class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _citizenshipController;
@@ -34,8 +36,8 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
   late TextEditingController _waterRateController;
   late TextEditingController _elecInitialController;
   late TextEditingController _waterInitialController;
+  late TextEditingController _rentController;
   DateTime? _leftDate;
-  bool _isBS = false;
   bool _isActive = true;
   final ImagePicker _picker = ImagePicker();
 
@@ -63,6 +65,9 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
     _waterInitialController = TextEditingController(
       text: widget.tenant?.initialWaterReading.toStringAsFixed(1) ?? '0',
     );
+    _rentController = TextEditingController(
+      text: widget.tenant?.monthlyRent.toStringAsFixed(0) ?? '0',
+    );
     _isActive = widget.tenant?.isActive ?? true;
   }
 
@@ -75,19 +80,20 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
     _waterRateController.dispose();
     _elecInitialController.dispose();
     _waterInitialController.dispose();
+    _rentController.dispose();
     super.dispose();
   }
 
   Future<void> _pickCitizenshipImage() async {
-    final l10n = L10n.of(context);
-    final source = await showModalBottomSheet<ImageSource>(
+    final L10n l10n = L10n.of(context);
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
       context: context,
-      builder: (context) => SafeArea(
+      builder: (BuildContext context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
+            children: <Widget>[
               ListTile(
                 leading: const Icon(Icons.camera_alt_rounded),
                 title: Text(l10n.get('camera')),
@@ -111,10 +117,10 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
         imageQuality: 80,
       );
       if (image != null) {
-        final dir = await getApplicationDocumentsDirectory();
-        final fileName =
+        final Directory dir = await getApplicationDocumentsDirectory();
+        final String fileName =
             'citizenship_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final savedFile = await File(image.path).copy('${dir.path}/$fileName');
+        final File savedFile = await File(image.path).copy('${dir.path}/$fileName');
         setState(() {
           _citizenshipImagePath = savedFile.path;
         });
@@ -124,8 +130,9 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.tenant != null;
-    final l10n = L10n.of(context);
+    final bool isEdit = widget.tenant != null;
+    final L10n l10n = L10n.of(context);
+    final bool isBS = context.watch<SettingsCubit>().state == DateSystem.bs;
 
     return Scaffold(
       appBar: AppBar(
@@ -135,15 +142,15 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
       body: Form(
         key: _formKey,
         child: Column(
-          children: [
+          children: <Widget>[
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(16),
-                children: [
+                children: <Widget>[
                   _formCard(
                     title: l10n.get('tenant_details'),
                     icon: Icons.person_outline,
-                    children: [
+                    children: <Widget>[
                       TextFormField(
                         controller: _nameController,
                         decoration: InputDecoration(
@@ -151,7 +158,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                           hintText: l10n.get('full_name_hint'),
                           prefixIcon: const Icon(Icons.person, size: 20),
                         ),
-                        validator: (v) =>
+                        validator: (String? v) =>
                             v == null || v.isEmpty ? 'आवश्यक छ' : null,
                         textCapitalization: TextCapitalization.words,
                       ),
@@ -164,8 +171,22 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                           prefixIcon: const Icon(Icons.phone, size: 20),
                         ),
                         keyboardType: TextInputType.phone,
-                        validator: (v) =>
-                            v == null || v.isEmpty ? l10n.get('required') : null,
+                        validator: (String? v) => v == null || v.isEmpty
+                            ? l10n.get('required')
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _rentController,
+                        decoration: InputDecoration(
+                          labelText: l10n.get('monthly_rent'),
+                          hintText: l10n.get('rent_hint'),
+                          prefixIcon: const Icon(Icons.money, size: 20),
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (String? v) => v == null || v.isEmpty
+                            ? l10n.get('required')
+                            : null,
                       ),
                     ],
                   ),
@@ -173,9 +194,9 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                   _formCard(
                     title: l10n.get('room_flat_shop'),
                     icon: Icons.key_outlined,
-                    children: [
+                    children: <Widget>[
                       BlocBuilder<PropertyBloc, PropertyState>(
-                        builder: (context, state) {
+                        builder: (BuildContext context, PropertyState state) {
                           if (state is PropertyLoaded) {
                             if (state.properties.isEmpty) {
                               return _InfoBox(
@@ -184,32 +205,41 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                               );
                             }
                             return DropdownButtonFormField<String>(
-                              value: _selectedPropertyId,
+                              initialValue: _selectedPropertyId,
                               decoration: InputDecoration(
                                 labelText: l10n.get('select_room'),
                                 prefixIcon: const Icon(Icons.home, size: 20),
                               ),
-                              items: state.properties.where((property) {
-                                final activeTenants = Hive.box<TenantModel>(Constants.tenantsBox).values.where((t) => t.isActive).toList();
-                                final activePropertyIds = activeTenants.map((t) => t.propertyId).toSet();
-                                return !activePropertyIds.contains(property.id) || property.id == widget.tenant?.propertyId;
-                              }).map((property) {
-                                return DropdownMenuItem(
-                                  value: property.id,
-                                  child: Text(
-                                    property.unitNumber.isNotEmpty
-                                        ? '${property.name} - ${property.unitNumber}'
-                                        : property.name,
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
+                              items: state.properties
+                                  .where((PropertyModel property) {
+                                    final List<TenantModel> activeTenants = Hive.box<TenantModel>(
+                                      Constants.tenantsBox,
+                                    ).values.where((TenantModel t) => t.isActive).toList();
+                                    final Set<String> activePropertyIds = activeTenants
+                                        .map((TenantModel t) => t.propertyId)
+                                        .toSet();
+                                    return !activePropertyIds.contains(
+                                          property.id,
+                                        ) ||
+                                        property.id ==
+                                            widget.tenant?.propertyId;
+                                  })
+                                  .map((PropertyModel property) => DropdownMenuItem<String>(
+                                      value: property.id,
+                                      child: Text(
+                                        property.unitNumber.isNotEmpty
+                                            ? '${property.name} - ${property.unitNumber}'
+                                            : property.name,
+                                      ),
+                                    ))
+                                  .toList(),
+                              onChanged: (String? value) {
                                 setState(() => _selectedPropertyId = value);
                                 if (!isEdit && value != null) {
                                   _loadPreviousReadingsForProperty(value);
                                 }
                               },
-                              validator: (v) =>
+                              validator: (String? v) =>
                                   v == null ? l10n.get('required') : null,
                             );
                           }
@@ -219,7 +249,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                       const SizedBox(height: 14),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
+                        children: <Widget>[
                           Text(
                             l10n.get('active_status'),
                             style: const TextStyle(
@@ -229,7 +259,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                             ),
                           ),
                           Row(
-                            children: [
+                            children: <Widget>[
                               Text(
                                 _isActive
                                     ? l10n.get('currently_active')
@@ -244,7 +274,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                                 scale: 0.7,
                                 child: Switch.adaptive(
                                   value: _isActive,
-                                  onChanged: (val) =>
+                                  onChanged: (bool val) =>
                                       setState(() => _isActive = val),
                                   activeTrackColor: const Color(0xFF059669),
                                 ),
@@ -253,12 +283,12 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                           ),
                         ],
                       ),
-                      if (!_isActive) ...[
+                      if (!_isActive) ...<Widget>[
                         const SizedBox(height: 14),
                         InkWell(
                           onTap: () async {
-                            if (_isBS) {
-                              final date = await showNepaliDatePicker(
+                            if (isBS) {
+                              final NepaliDateTime? date = await showNepaliDatePicker(
                                 context: context,
                                 initialDate:
                                     _leftDate?.toNepaliDateTime() ??
@@ -272,7 +302,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                                 setState(() => _leftDate = date.toDateTime());
                               }
                             } else {
-                              final date = await showDatePicker(
+                              final DateTime? date = await showDatePicker(
                                 context: context,
                                 initialDate: _leftDate ?? DateTime.now(),
                                 firstDate: DateTime(2000),
@@ -297,8 +327,10 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                             ),
                             child: Text(
                               _leftDate != null
-                                  ? (_isBS
-                                        ? NepaliDateFormat('dd MMM yyyy').format(
+                                  ? (isBS
+                                        ? NepaliDateFormat(
+                                            'dd MMM yyyy',
+                                          ).format(
                                             _leftDate!.toNepaliDateTime(),
                                           )
                                         : DateFormat(
@@ -313,47 +345,19 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                         ),
                       ],
                       const SizedBox(height: 14),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            l10n.get('move_in_date'),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                _isBS
-                                    ? l10n.get('using_bs')
-                                    : l10n.get('using_ad'),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFF94A3B8),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Transform.scale(
-                                scale: 0.7,
-                                child: Switch.adaptive(
-                                  value: _isBS,
-                                  onChanged: (val) =>
-                                      setState(() => _isBS = val),
-                                  activeTrackColor: const Color(0xFF059669),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      Text(
+                        l10n.get('move_in_date'),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
                       ),
                       const SizedBox(height: 8),
                       InkWell(
                         onTap: () async {
-                          if (_isBS) {
-                            final date = await showNepaliDatePicker(
+                          if (isBS) {
+                            final NepaliDateTime? date = await showNepaliDatePicker(
                               context: context,
                               initialDate:
                                   _moveInDate?.toNepaliDateTime() ??
@@ -367,7 +371,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                               setState(() => _moveInDate = date.toDateTime());
                             }
                           } else {
-                            final date = await showDatePicker(
+                            final DateTime? date = await showDatePicker(
                               context: context,
                               initialDate: _moveInDate ?? DateTime.now(),
                               firstDate: DateTime(2000),
@@ -392,7 +396,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                           ),
                           child: Text(
                             _moveInDate != null
-                                ? (_isBS
+                                ? (isBS
                                       ? NepaliDateFormat('dd MMM yyyy').format(
                                           _moveInDate!.toNepaliDateTime(),
                                         )
@@ -409,7 +413,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                   _formCard(
                     title: l10n.get('utility_rates'),
                     icon: Icons.bolt_outlined,
-                    children: [
+                    children: <Widget>[
                       TextFormField(
                         controller: _elecRateController,
                         decoration: InputDecoration(
@@ -460,7 +464,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                   _formCard(
                     title: l10n.get('citizenship_proof'),
                     icon: Icons.assignment_ind_outlined,
-                    children: [
+                    children: <Widget>[
                       TextFormField(
                         controller: _citizenshipController,
                         decoration: InputDecoration(
@@ -480,12 +484,11 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: Colors.grey.shade200,
-                              style: BorderStyle.solid,
                             ),
                           ),
                           child: _citizenshipImagePath != null
                               ? Stack(
-                                  children: [
+                                  children: <Widget>[
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
                                       child: Image.file(
@@ -524,7 +527,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                                 )
                               : Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
+                                  children: <Widget>[
                                     Icon(
                                       Icons.add_a_photo_rounded,
                                       size: 32,
@@ -555,7 +558,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                boxShadow: [
+                boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
                     offset: const Offset(0, -4),
@@ -571,9 +574,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                   ),
                   onPressed: _saveTenant,
                   child: Text(
-                    isEdit
-                        ? l10n.get('update_tenant')
-                        : l10n.get('add_tenant'),
+                    isEdit ? l10n.get('update_tenant') : l10n.get('add_tenant'),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -592,15 +593,14 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
     required String title,
     required IconData icon,
     required List<Widget> children,
-  }) {
-    return Card(
+  }) => Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             Row(
-              children: [
+              children: <Widget>[
                 Icon(icon, size: 18, color: const Color(0xFF059669)),
                 const SizedBox(width: 8),
                 Text(
@@ -618,25 +618,23 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
         ),
       ),
     );
-  }
 
   void _loadPreviousReadingsForProperty(String propertyId) {
-    final billBox = Hive.box<BillModel>(Constants.billsBox);
-    final bills = billBox.values
-        .where((b) => b.propertyId == propertyId)
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final Box<BillModel> billBox = Hive.box<BillModel>(Constants.billsBox);
+    final List<BillModel> bills =
+        billBox.values.where((BillModel b) => b.propertyId == propertyId).toList()
+          ..sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
 
     if (bills.isNotEmpty) {
-      final lastBill = bills.first;
+      final BillModel lastBill = bills.first;
       setState(() {
         if (lastBill.currentElectricityReading != null) {
-          _elecInitialController.text =
-              lastBill.currentElectricityReading!.toStringAsFixed(1);
+          _elecInitialController.text = lastBill.currentElectricityReading!
+              .toStringAsFixed(1);
         }
         if (lastBill.currentWaterReading != null) {
-          _waterInitialController.text =
-              lastBill.currentWaterReading!.toStringAsFixed(1);
+          _waterInitialController.text = lastBill.currentWaterReading!
+              .toStringAsFixed(1);
         }
       });
     }
@@ -646,8 +644,8 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
     if (_formKey.currentState!.validate() &&
         _selectedPropertyId != null &&
         _moveInDate != null) {
-      final isEdit = widget.tenant != null;
-      final tenant = TenantModel.create(
+      final bool isEdit = widget.tenant != null;
+      final TenantModel tenant = TenantModel.create(
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
         propertyId: _selectedPropertyId!,
@@ -659,15 +657,16 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
         initialElectricityReading:
             double.tryParse(_elecInitialController.text) ?? 0,
         initialWaterReading: double.tryParse(_waterInitialController.text) ?? 0,
+        monthlyRent: double.tryParse(_rentController.text) ?? 0,
       );
 
       if (isEdit) {
-        final updatedTenant = widget.tenant!.copyWith(
+        final TenantModel updatedTenant = widget.tenant!.copyWith(
           name: _nameController.text.trim(),
           phone: _phoneController.text.trim(),
           citizenshipNumber: _citizenshipController.text.trim(),
-          moveInDate: _moveInDate,
-          propertyId: _selectedPropertyId,
+          moveInDate: _moveInDate!,
+          propertyId: _selectedPropertyId!,
           citizenshipImagePath: _citizenshipImagePath,
           electricityRate: double.tryParse(_elecRateController.text) ?? 0,
           waterRate: double.tryParse(_waterRateController.text) ?? 0,
@@ -677,6 +676,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
               double.tryParse(_waterInitialController.text) ?? 0,
           isActive: _isActive,
           leftDate: _isActive ? null : _leftDate,
+          monthlyRent: double.tryParse(_rentController.text) ?? 0,
         );
         context.read<TenantBloc>().add(UpdateTenant(updatedTenant));
       } else {
@@ -706,13 +706,12 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
 }
 
 class _InfoBox extends StatelessWidget {
+  const _InfoBox({required this.icon, required this.text});
   final IconData icon;
   final String text;
-  const _InfoBox({required this.icon, required this.text});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
+  Widget build(BuildContext context) => Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.orange.withValues(alpha: 0.06),
@@ -720,12 +719,11 @@ class _InfoBox extends StatelessWidget {
         border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
       ),
       child: Row(
-        children: [
+        children: <Widget>[
           Icon(icon, color: Colors.orange, size: 20),
           const SizedBox(width: 10),
           Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
         ],
       ),
     );
-  }
 }

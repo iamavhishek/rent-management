@@ -25,7 +25,6 @@ class AppTheme {
     brightness: Brightness.light,
     colorScheme: ColorScheme.fromSeed(
       seedColor: primary,
-      brightness: Brightness.light,
       primary: primary,
       secondary: accent,
       surface: surface,
@@ -93,11 +92,11 @@ class AppTheme {
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: divider, width: 1),
+        borderSide: const BorderSide(color: divider),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: divider, width: 1),
+        borderSide: const BorderSide(color: divider),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -105,7 +104,7 @@ class AppTheme {
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: danger, width: 1),
+        borderSide: const BorderSide(color: danger),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -137,7 +136,7 @@ class AppTheme {
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(0, 42),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        side: const BorderSide(color: divider, width: 1),
+        side: const BorderSide(color: divider),
         textStyle: GoogleFonts.poppins(
           fontSize: 14,
           fontWeight: FontWeight.w500,
@@ -148,7 +147,9 @@ class AppTheme {
       backgroundColor: primary,
       foregroundColor: Colors.white,
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+      ),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: cardBg,
@@ -161,12 +162,13 @@ class AppTheme {
         fontSize: 11,
         fontWeight: FontWeight.w600,
       ),
-      unselectedLabelStyle: TextStyle(
-        fontFamily: 'Poppins',
-        fontSize: 11,
-      ),
+      unselectedLabelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 11),
     ),
-    dividerTheme: const DividerThemeData(color: divider, thickness: 0.5, space: 0),
+    dividerTheme: const DividerThemeData(
+      color: divider,
+      thickness: 0.5,
+      space: 0,
+    ),
     chipTheme: ChipThemeData(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       side: const BorderSide(color: divider, width: 0.5),
@@ -177,7 +179,7 @@ class AppTheme {
       backgroundColor: textPrimary,
       contentTextStyle: GoogleFonts.poppins(color: Colors.white),
     ),
-    navigationBarTheme: NavigationBarThemeData(
+    navigationBarTheme: const NavigationBarThemeData(
       backgroundColor: cardBg,
       height: 68,
       elevation: 0,

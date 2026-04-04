@@ -4,39 +4,39 @@ abstract class PropertyEvent extends Equatable {
   const PropertyEvent();
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => <Object?>[];
 }
 
 class LoadProperties extends PropertyEvent {}
 
 class AddProperty extends PropertyEvent {
-  final PropertyModel property;
   const AddProperty(this.property);
+  final PropertyModel property;
 
   @override
-  List<Object?> get props => [property];
+  List<Object?> get props => <Object?>[property];
 }
 
 class UpdateProperty extends PropertyEvent {
-  final PropertyModel property;
   const UpdateProperty(this.property);
+  final PropertyModel property;
 
   @override
-  List<Object?> get props => [property];
+  List<Object?> get props => <Object?>[property];
 }
 
 class DeleteProperty extends PropertyEvent {
-  final String id;
   const DeleteProperty(this.id);
+  final String id;
 
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props => <Object?>[id];
 }
 
 class GetPropertyById extends PropertyEvent {
-  final String id;
   const GetPropertyById(this.id);
+  final String id;
 
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props => <Object?>[id];
 }

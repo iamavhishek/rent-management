@@ -8,7 +8,6 @@ part 'tenant_event.dart';
 part 'tenant_state.dart';
 
 class TenantBloc extends Bloc<TenantEvent, TenantState> {
-  late Box<TenantModel> tenantBox;
 
   TenantBloc() : super(TenantInitial()) {
     tenantBox = Hive.box<TenantModel>(Constants.tenantsBox);
@@ -20,6 +19,7 @@ class TenantBloc extends Bloc<TenantEvent, TenantState> {
     on<GetTenantById>(_onGetTenantById);
     on<GetTenantsByProperty>(_onGetTenantsByProperty);
   }
+  late Box<TenantModel> tenantBox;
 
   Future<void> _onLoadTenants(
     LoadTenants event,
@@ -27,7 +27,7 @@ class TenantBloc extends Bloc<TenantEvent, TenantState> {
   ) async {
     emit(TenantLoading());
     try {
-      final tenants = tenantBox.values.toList();
+      final List<TenantModel> tenants = tenantBox.values.toList();
       emit(TenantLoaded(tenants: tenants));
     } catch (e) {
       emit(TenantError(message: 'Failed to load tenants: $e'));
@@ -38,7 +38,7 @@ class TenantBloc extends Bloc<TenantEvent, TenantState> {
     emit(TenantLoading());
     try {
       await tenantBox.put(event.tenant.id, event.tenant);
-      final tenants = tenantBox.values.toList();
+      final List<TenantModel> tenants = tenantBox.values.toList();
       emit(TenantLoaded(tenants: tenants));
     } catch (e) {
       emit(TenantError(message: 'Failed to add tenant: $e'));
@@ -52,7 +52,7 @@ class TenantBloc extends Bloc<TenantEvent, TenantState> {
     emit(TenantLoading());
     try {
       await tenantBox.put(event.tenant.id, event.tenant);
-      final tenants = tenantBox.values.toList();
+      final List<TenantModel> tenants = tenantBox.values.toList();
       emit(TenantLoaded(tenants: tenants));
     } catch (e) {
       emit(TenantError(message: 'Failed to update tenant: $e'));
@@ -66,7 +66,7 @@ class TenantBloc extends Bloc<TenantEvent, TenantState> {
     emit(TenantLoading());
     try {
       await tenantBox.delete(event.id);
-      final tenants = tenantBox.values.toList();
+      final List<TenantModel> tenants = tenantBox.values.toList();
       emit(TenantLoaded(tenants: tenants));
     } catch (e) {
       emit(TenantError(message: 'Failed to delete tenant: $e'));
@@ -79,11 +79,11 @@ class TenantBloc extends Bloc<TenantEvent, TenantState> {
   ) async {
     emit(TenantLoading());
     try {
-      final tenant = tenantBox.get(event.id);
+      final TenantModel? tenant = tenantBox.get(event.id);
       if (tenant != null) {
-        emit(TenantLoaded(tenants: [tenant]));
+        emit(TenantLoaded(tenants: <TenantModel>[tenant]));
       } else {
-        emit(TenantError(message: 'Tenant not found'));
+        emit(const TenantError(message: 'Tenant not found'));
       }
     } catch (e) {
       emit(TenantError(message: 'Failed to get tenant: $e'));
@@ -96,8 +96,8 @@ class TenantBloc extends Bloc<TenantEvent, TenantState> {
   ) async {
     emit(TenantLoading());
     try {
-      final tenants = tenantBox.values
-          .where((tenant) => tenant.propertyId == event.propertyId)
+      final List<TenantModel> tenants = tenantBox.values
+          .where((TenantModel tenant) => tenant.propertyId == event.propertyId)
           .toList();
       emit(TenantLoaded(tenants: tenants));
     } catch (e) {

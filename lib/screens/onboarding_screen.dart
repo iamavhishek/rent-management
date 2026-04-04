@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:rent_bill_maker/bloc/language/language_cubit.dart';
 import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
+import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
+import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/screens/home_screen.dart';
@@ -56,38 +58,35 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   void _completeOnboarding() {
-    Hive.box(Constants.settingsBox).put('onboarding_completed', true);
+    Hive.box<dynamic>(Constants.settingsBox).put('onboarding_completed', true);
     Navigator.of(context).pushAndRemoveUntil(
-      PageRouteBuilder(
+      PageRouteBuilder<void>(
         pageBuilder: (_, _, _) => const HomeScreen(),
-        transitionsBuilder: (_, animation, _, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
+        transitionsBuilder: (_, Animation<double> animation, _, Widget child) => FadeTransition(opacity: animation, child: child),
         transitionDuration: const Duration(milliseconds: 600),
       ),
-      (route) => false,
+      (Route<dynamic> route) => false,
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+  Widget build(BuildContext context) => Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8FAFC), Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
+            colors: <Color>[Color(0xFFF8FAFC), Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
           ),
         ),
         child: SafeArea(
           child: Column(
-            children: [
+            children: <Widget>[
               const SizedBox(height: 20),
               // Step indicator
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: _StepIndicator(currentStep: _currentPage, totalSteps: 3),
+                child: _StepIndicator(currentStep: _currentPage, totalSteps: 4),
               ),
               const SizedBox(height: 8),
               Expanded(
@@ -96,10 +95,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   child: PageView(
                     controller: _pageController,
                     physics: const NeverScrollableScrollPhysics(),
-                    onPageChanged: (page) =>
+                    onPageChanged: (int page) =>
                         setState(() => _currentPage = page),
-                    children: [
+                    children: <Widget>[
                       _LanguageStep(onNext: _nextPage),
+                      _CalendarStep(onNext: _nextPage),
                       _PropertyStep(onNext: _nextPage, onSkip: _nextPage),
                       _TenantStep(
                         onNext: _completeOnboarding,
@@ -114,23 +114,21 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         ),
       ),
     );
-  }
 }
 
 // ---------------------------------------------------------------------------
 // Step Indicator
 // ---------------------------------------------------------------------------
 class _StepIndicator extends StatelessWidget {
+  const _StepIndicator({required this.currentStep, required this.totalSteps});
   final int currentStep;
   final int totalSteps;
-  const _StepIndicator({required this.currentStep, required this.totalSteps});
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(totalSteps, (index) {
-        final isActive = index <= currentStep;
-        final isCurrent = index == currentStep;
+  Widget build(BuildContext context) => Row(
+      children: List<Widget>.generate(totalSteps, (int index) {
+        final bool isActive = index <= currentStep;
+        final bool isCurrent = index == currentStep;
         return Expanded(
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 350),
@@ -141,35 +139,34 @@ class _StepIndicator extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               color: isActive
                   ? const Color(0xFF2563EB)
-                  : const Color(0xFF2563EB).withOpacity(0.15),
+                  : const Color(0xFF2563EB).withValues(alpha: 0.15),
             ),
           ),
         );
       }),
     );
-  }
 }
 
 // ---------------------------------------------------------------------------
 // Step 1 – Language (NOT skippable)
 // ---------------------------------------------------------------------------
 class _LanguageStep extends StatelessWidget {
-  final VoidCallback onNext;
   const _LanguageStep({required this.onNext});
+  final VoidCallback onNext;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final L10n l10n = L10n.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
-        children: [
+        children: <Widget>[
           const Spacer(flex: 2),
           // Illustrated icon
-          _IllustrationBubble(
+          const _IllustrationBubble(
             icon: Icons.translate_rounded,
-            color: const Color(0xFF2563EB),
+            color: Color(0xFF2563EB),
             size: 100,
           ),
           const SizedBox(height: 36),
@@ -237,23 +234,109 @@ class _LanguageStep extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Step 2 – Calendar (NOT skippable)
+// ---------------------------------------------------------------------------
+class _CalendarStep extends StatelessWidget {
+  const _CalendarStep({required this.onNext});
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final L10n l10n = L10n.of(context);
+    final DateSystem currentSystem = context.watch<SettingsCubit>().state;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Column(
+        children: <Widget>[
+          const Spacer(flex: 2),
+          const _IllustrationBubble(
+            icon: Icons.calendar_month_rounded,
+            color: Color(0xFF2563EB),
+            size: 100,
+          ),
+          const SizedBox(height: 36),
+          Text(
+            l10n.get('welcome_calendar'),
+            style: const TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            l10n.get('calendar_desc'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 16,
+              color: Color(0xFF64748B),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 40),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              l10n.get('select_calendar'),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF334155),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _LanguageTile(
+            flag: '📅',
+            title: l10n.get('bs_system'),
+            subtitle: l10n.get('use_bs'),
+            isSelected: currentSystem == DateSystem.bs,
+            onTap: () =>
+                context.read<SettingsCubit>().setDateSystem(DateSystem.bs),
+          ),
+          const SizedBox(height: 12),
+          _LanguageTile(
+            flag: '🗓️',
+            title: l10n.get('ad_system'),
+            subtitle: l10n.get('use_ad'),
+            isSelected: currentSystem == DateSystem.ad,
+            onTap: () =>
+                context.read<SettingsCubit>().setDateSystem(DateSystem.ad),
+          ),
+          const Spacer(flex: 3),
+          _PrimaryButton(
+            label: l10n.get('next'),
+            onPressed: onNext,
+            icon: Icons.arrow_forward_rounded,
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Step 2 – Property (skippable)
 // ---------------------------------------------------------------------------
 class _PropertyStep extends StatefulWidget {
+  const _PropertyStep({required this.onNext, required this.onSkip});
   final VoidCallback onNext;
   final VoidCallback onSkip;
-  const _PropertyStep({required this.onNext, required this.onSkip});
 
   @override
   State<_PropertyStep> createState() => _PropertyStepState();
 }
 
 class _PropertyStepState extends State<_PropertyStep> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _unitController = TextEditingController();
-  final _rentController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _unitController = TextEditingController();
+  final TextEditingController _rentController = TextEditingController();
 
   @override
   void dispose() {
@@ -266,23 +349,22 @@ class _PropertyStepState extends State<_PropertyStep> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final L10n l10n = L10n.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
-        children: [
+        children: <Widget>[
           Expanded(
             child: Form(
               key: _formKey,
               child: ListView(
                 padding: const EdgeInsets.only(top: 12, bottom: 24),
-                children: [
+                children: <Widget>[
                   const SizedBox(height: 20),
-                  _IllustrationBubble(
+                  const _IllustrationBubble(
                     icon: Icons.home_work_rounded,
-                    color: const Color(0xFF2563EB),
-                    size: 80,
+                    color: Color(0xFF2563EB),
                   ),
                   const SizedBox(height: 28),
                   Text(
@@ -309,22 +391,24 @@ class _PropertyStepState extends State<_PropertyStep> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
+                      boxShadow: <BoxShadow>[
                         BoxShadow(
-                          color: const Color(0xFF2563EB).withOpacity(0.06),
+                          color: const Color(
+                            0xFF2563EB,
+                          ).withValues(alpha: 0.06),
                           blurRadius: 24,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: Column(
-                      children: [
+                      children: <Widget>[
                         _OnboardingField(
                           controller: _nameController,
                           label: l10n.get('property_name'),
                           hint: l10n.get('property_name_hint'),
                           icon: Icons.apartment_rounded,
-                          validator: (v) => v == null || v.isEmpty
+                          validator: (String? v) => v == null || v.isEmpty
                               ? l10n.get('required')
                               : null,
                         ),
@@ -334,7 +418,7 @@ class _PropertyStepState extends State<_PropertyStep> {
                           label: l10n.get('address'),
                           hint: l10n.get('address_hint'),
                           icon: Icons.location_on_rounded,
-                          validator: (v) => v == null || v.isEmpty
+                          validator: (String? v) => v == null || v.isEmpty
                               ? l10n.get('required')
                               : null,
                         ),
@@ -352,7 +436,7 @@ class _PropertyStepState extends State<_PropertyStep> {
                           hint: l10n.get('rent_hint'),
                           icon: Icons.payments_rounded,
                           keyboardType: TextInputType.number,
-                          validator: (v) => v == null || v.isEmpty
+                          validator: (String? v) => v == null || v.isEmpty
                               ? l10n.get('required')
                               : null,
                         ),
@@ -364,7 +448,7 @@ class _PropertyStepState extends State<_PropertyStep> {
             ),
           ),
           Row(
-            children: [
+            children: <Widget>[
               Expanded(
                 child: _GhostButton(
                   label: l10n.get('skip'),
@@ -379,12 +463,11 @@ class _PropertyStepState extends State<_PropertyStep> {
                   icon: Icons.arrow_forward_rounded,
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      final property = PropertyModel.create(
+                      final PropertyModel property = PropertyModel.create(
                         name: _nameController.text.trim(),
                         address: _addressController.text.trim(),
                         unitNumber: _unitController.text.trim(),
                         monthlyRent: double.parse(_rentController.text.trim()),
-                        securityDeposit: 0,
                         ownerName: '',
                         ownerPhone: '',
                       );
@@ -407,18 +490,18 @@ class _PropertyStepState extends State<_PropertyStep> {
 // Step 3 – Tenant (skippable)
 // ---------------------------------------------------------------------------
 class _TenantStep extends StatefulWidget {
+  const _TenantStep({required this.onNext, required this.onSkip});
   final VoidCallback onNext;
   final VoidCallback onSkip;
-  const _TenantStep({required this.onNext, required this.onSkip});
 
   @override
   State<_TenantStep> createState() => _TenantStepState();
 }
 
 class _TenantStepState extends State<_TenantStep> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
   @override
   void dispose() {
@@ -429,23 +512,22 @@ class _TenantStepState extends State<_TenantStep> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final L10n l10n = L10n.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
-        children: [
+        children: <Widget>[
           Expanded(
             child: Form(
               key: _formKey,
               child: ListView(
                 padding: const EdgeInsets.only(top: 12, bottom: 24),
-                children: [
+                children: <Widget>[
                   const SizedBox(height: 20),
-                  _IllustrationBubble(
+                  const _IllustrationBubble(
                     icon: Icons.person_add_alt_1_rounded,
-                    color: const Color(0xFF059669),
-                    size: 80,
+                    color: Color(0xFF059669),
                   ),
                   const SizedBox(height: 28),
                   Text(
@@ -468,10 +550,10 @@ class _TenantStepState extends State<_TenantStep> {
                   const SizedBox(height: 32),
                   // Property chip (if added)
                   BlocBuilder<PropertyBloc, PropertyState>(
-                    builder: (context, state) {
+                    builder: (BuildContext context, PropertyState state) {
                       if (state is PropertyLoaded &&
                           state.properties.isNotEmpty) {
-                        final p = state.properties.first;
+                        final PropertyModel p = state.properties.first;
                         return Container(
                           margin: const EdgeInsets.only(bottom: 20),
                           padding: const EdgeInsets.symmetric(
@@ -479,14 +561,18 @@ class _TenantStepState extends State<_TenantStep> {
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF059669).withOpacity(0.08),
+                            color: const Color(
+                              0xFF059669,
+                            ).withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: const Color(0xFF059669).withOpacity(0.2),
+                              color: const Color(
+                                0xFF059669,
+                              ).withValues(alpha: 0.2),
                             ),
                           ),
                           child: Row(
-                            children: [
+                            children: <Widget>[
                               const Icon(
                                 Icons.home_rounded,
                                 size: 20,
@@ -520,22 +606,24 @@ class _TenantStepState extends State<_TenantStep> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
+                      boxShadow: <BoxShadow>[
                         BoxShadow(
-                          color: const Color(0xFF059669).withOpacity(0.06),
+                          color: const Color(
+                            0xFF059669,
+                          ).withValues(alpha: 0.06),
                           blurRadius: 24,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: Column(
-                      children: [
+                      children: <Widget>[
                         _OnboardingField(
                           controller: _nameController,
                           label: l10n.get('tenant_name'),
                           hint: l10n.get('full_name_hint'),
                           icon: Icons.person_rounded,
-                          validator: (v) => v == null || v.isEmpty
+                          validator: (String? v) => v == null || v.isEmpty
                               ? l10n.get('required')
                               : null,
                         ),
@@ -546,7 +634,7 @@ class _TenantStepState extends State<_TenantStep> {
                           hint: l10n.get('phone_hint'),
                           icon: Icons.phone_rounded,
                           keyboardType: TextInputType.phone,
-                          validator: (v) => v == null || v.isEmpty
+                          validator: (String? v) => v == null || v.isEmpty
                               ? l10n.get('required')
                               : null,
                         ),
@@ -558,7 +646,7 @@ class _TenantStepState extends State<_TenantStep> {
             ),
           ),
           Row(
-            children: [
+            children: <Widget>[
               Expanded(
                 child: _GhostButton(
                   label: l10n.get('skip'),
@@ -573,11 +661,11 @@ class _TenantStepState extends State<_TenantStep> {
                   icon: Icons.rocket_launch_rounded,
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      final propertyState = context.read<PropertyBloc>().state;
+                      final PropertyState propertyState = context.read<PropertyBloc>().state;
                       if (propertyState is PropertyLoaded &&
                           propertyState.properties.isNotEmpty) {
-                        final property = propertyState.properties.first;
-                        final tenant = TenantModel.create(
+                        final PropertyModel property = propertyState.properties.first;
+                        final TenantModel tenant = TenantModel.create(
                           name: _nameController.text.trim(),
                           phone: _phoneController.text.trim(),
                           propertyId: property.id,
@@ -606,19 +694,18 @@ class _TenantStepState extends State<_TenantStep> {
 
 /// Animated illustrated circle with icon
 class _IllustrationBubble extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final double size;
 
   const _IllustrationBubble({
     required this.icon,
     required this.color,
     this.size = 80,
   });
+  final IconData icon;
+  final Color color;
+  final double size;
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
+  Widget build(BuildContext context) => Center(
       child: Container(
         width: size,
         height: size,
@@ -627,11 +714,14 @@ class _IllustrationBubble extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [color.withOpacity(0.15), color.withOpacity(0.06)],
+            colors: <Color>[
+              color.withValues(alpha: 0.15),
+              color.withValues(alpha: 0.06),
+            ],
           ),
-          boxShadow: [
+          boxShadow: <BoxShadow>[
             BoxShadow(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -643,23 +733,17 @@ class _IllustrationBubble extends StatelessWidget {
             height: size * 0.65,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
             ),
             child: Icon(icon, size: size * 0.35, color: color),
           ),
         ),
       ),
     );
-  }
 }
 
 /// Language selection tile
 class _LanguageTile extends StatelessWidget {
-  final String flag;
-  final String title;
-  final String subtitle;
-  final bool isSelected;
-  final VoidCallback onTap;
 
   const _LanguageTile({
     required this.flag,
@@ -668,17 +752,23 @@ class _LanguageTile extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
   });
+  final String flag;
+  final String title;
+  final String subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
+  Widget build(BuildContext context) => GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withOpacity(0.6),
+          color: isSelected
+              ? Colors.white
+              : Colors.white.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
@@ -687,23 +777,23 @@ class _LanguageTile extends StatelessWidget {
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
-              ? [
+              ? <BoxShadow>[
                   BoxShadow(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
                 ]
-              : [],
+              : <BoxShadow>[],
         ),
         child: Row(
-          children: [
+          children: <Widget>[
             Text(flag, style: const TextStyle(fontSize: 28)),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   Text(
                     title,
                     style: TextStyle(
@@ -728,7 +818,7 @@ class _LanguageTile extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               child: isSelected
                   ? Container(
-                      key: const ValueKey('check'),
+                      key: const ValueKey<String>('check'),
                       width: 28,
                       height: 28,
                       decoration: const BoxDecoration(
@@ -742,7 +832,7 @@ class _LanguageTile extends StatelessWidget {
                       ),
                     )
                   : Container(
-                      key: const ValueKey('uncheck'),
+                      key: const ValueKey<String>('uncheck'),
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
@@ -758,17 +848,10 @@ class _LanguageTile extends StatelessWidget {
         ),
       ),
     );
-  }
 }
 
 /// Styled text field for onboarding forms
 class _OnboardingField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final IconData icon;
-  final TextInputType keyboardType;
-  final String? Function(String?)? validator;
 
   const _OnboardingField({
     required this.controller,
@@ -778,10 +861,15 @@ class _OnboardingField extends StatelessWidget {
     this.keyboardType = TextInputType.text,
     this.validator,
   });
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final TextInputType keyboardType;
+  final String? Function(String?)? validator;
 
   @override
-  Widget build(BuildContext context) {
-    return TextFormField(
+  Widget build(BuildContext context) => TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
@@ -791,24 +879,22 @@ class _OnboardingField extends StatelessWidget {
         prefixIcon: Icon(icon, size: 20),
       ),
     );
-  }
 }
 
 /// Primary gradient-ish button
 class _PrimaryButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onPressed;
-  final IconData? icon;
 
   const _PrimaryButton({
     required this.label,
     required this.onPressed,
     this.icon,
   });
+  final String label;
+  final VoidCallback onPressed;
+  final IconData? icon;
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
+  Widget build(BuildContext context) => SizedBox(
       width: double.infinity,
       height: 54,
       child: ElevatedButton(
@@ -820,11 +906,11 @@ class _PrimaryButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          shadowColor: const Color(0xFF2563EB).withOpacity(0.3),
+          shadowColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          children: <Widget>[
             Text(
               label,
               style: const TextStyle(
@@ -833,7 +919,7 @@ class _PrimaryButton extends StatelessWidget {
                 letterSpacing: 0.3,
               ),
             ),
-            if (icon != null) ...[
+            if (icon != null) ...<Widget>[
               const SizedBox(width: 8),
               Icon(icon, size: 20),
             ],
@@ -841,19 +927,17 @@ class _PrimaryButton extends StatelessWidget {
         ),
       ),
     );
-  }
 }
 
 /// Ghost / skip button
 class _GhostButton extends StatelessWidget {
+
+  const _GhostButton({required this.label, required this.onPressed});
   final String label;
   final VoidCallback onPressed;
 
-  const _GhostButton({required this.label, required this.onPressed});
-
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
+  Widget build(BuildContext context) => SizedBox(
       height: 54,
       child: TextButton(
         onPressed: onPressed,
@@ -869,5 +953,4 @@ class _GhostButton extends StatelessWidget {
         ),
       ),
     );
-  }
 }

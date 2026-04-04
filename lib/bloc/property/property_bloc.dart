@@ -8,7 +8,6 @@ part 'property_event.dart';
 part 'property_state.dart';
 
 class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
-  late Box<PropertyModel> propertyBox;
 
   PropertyBloc() : super(PropertyInitial()) {
     propertyBox = Hive.box<PropertyModel>(Constants.propertiesBox);
@@ -19,6 +18,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
     on<DeleteProperty>(_onDeleteProperty);
     on<GetPropertyById>(_onGetPropertyById);
   }
+  late Box<PropertyModel> propertyBox;
 
   Future<void> _onLoadProperties(
     LoadProperties event,
@@ -26,7 +26,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
   ) async {
     emit(PropertyLoading());
     try {
-      final properties = propertyBox.values.toList();
+      final List<PropertyModel> properties = propertyBox.values.toList();
       emit(PropertyLoaded(properties: properties));
     } catch (e) {
       emit(PropertyError(message: 'Failed to load properties: $e'));
@@ -40,7 +40,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
     emit(PropertyLoading());
     try {
       await propertyBox.put(event.property.id, event.property);
-      final properties = propertyBox.values.toList();
+      final List<PropertyModel> properties = propertyBox.values.toList();
       emit(PropertyLoaded(properties: properties));
     } catch (e) {
       emit(PropertyError(message: 'Failed to add property: $e'));
@@ -54,7 +54,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
     emit(PropertyLoading());
     try {
       await propertyBox.put(event.property.id, event.property);
-      final properties = propertyBox.values.toList();
+      final List<PropertyModel> properties = propertyBox.values.toList();
       emit(PropertyLoaded(properties: properties));
     } catch (e) {
       emit(PropertyError(message: 'Failed to update property: $e'));
@@ -68,7 +68,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
     emit(PropertyLoading());
     try {
       await propertyBox.delete(event.id);
-      final properties = propertyBox.values.toList();
+      final List<PropertyModel> properties = propertyBox.values.toList();
       emit(PropertyLoaded(properties: properties));
     } catch (e) {
       emit(PropertyError(message: 'Failed to delete property: $e'));
@@ -81,11 +81,11 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
   ) async {
     emit(PropertyLoading());
     try {
-      final property = propertyBox.get(event.id);
+      final PropertyModel? property = propertyBox.get(event.id);
       if (property != null) {
-        emit(PropertyLoaded(properties: [property]));
+        emit(PropertyLoaded(properties: <PropertyModel>[property]));
       } else {
-        emit(PropertyError(message: 'Property not found'));
+        emit(const PropertyError(message: 'Property not found'));
       }
     } catch (e) {
       emit(PropertyError(message: 'Failed to get property: $e'));

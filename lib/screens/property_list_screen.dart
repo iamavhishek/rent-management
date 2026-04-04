@@ -13,11 +13,11 @@ class PropertyListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final L10n l10n = L10n.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.get('properties'))),
       body: BlocBuilder<PropertyBloc, PropertyState>(
-        builder: (context, state) {
+        builder: (BuildContext context, PropertyState state) {
           if (state is PropertyLoaded) {
             if (state.properties.isEmpty) {
               return Padding(
@@ -25,7 +25,7 @@ class PropertyListScreen extends StatelessWidget {
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                    children: <Widget>[
                       Icon(
                         Icons.home_work_outlined,
                         size: 64,
@@ -53,9 +53,9 @@ class PropertyListScreen extends StatelessWidget {
             return ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
               itemCount: state.properties.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final property = state.properties[index];
+              separatorBuilder: (BuildContext context, int index) => const SizedBox(height: 10),
+              itemBuilder: (BuildContext context, int index) {
+                final PropertyModel property = state.properties[index];
                 return Card(
                   child: InkWell(
                     onTap: () => _editProperty(context, property),
@@ -66,7 +66,7 @@ class PropertyListScreen extends StatelessWidget {
                         vertical: 14,
                       ),
                       child: Row(
-                        children: [
+                        children: <Widget>[
                           Container(
                             width: 48,
                             height: 48,
@@ -84,9 +84,9 @@ class PropertyListScreen extends StatelessWidget {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                              children: <Widget>[
                                 Row(
-                                  children: [
+                                  children: <Widget>[
                                     Flexible(
                                       child: Text(
                                         '${property.name}${property.unitNumber.isNotEmpty ? " - ${property.unitNumber}" : ""}',
@@ -99,19 +99,19 @@ class PropertyListScreen extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 8),
                                     Builder(
-                                      builder: (context) {
-                                        final activeTenants =
+                                      builder: (BuildContext context) {
+                                        final List<TenantModel> activeTenants =
                                             Hive.box<TenantModel>(
                                                   Constants.tenantsBox,
                                                 ).values
                                                 .where(
-                                                  (t) =>
+                                                  (TenantModel t) =>
                                                       t.isActive &&
                                                       t.propertyId ==
                                                           property.id,
                                                 )
                                                 .toList();
-                                        final isOccupied =
+                                        final bool isOccupied =
                                             activeTenants.isNotEmpty;
                                         return Container(
                                           padding: const EdgeInsets.symmetric(
@@ -153,6 +153,48 @@ class PropertyListScreen extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
+                                Builder(
+                                  builder: (BuildContext context) {
+                                    final List<TenantModel> activeTenants =
+                                        Hive.box<TenantModel>(
+                                              Constants.tenantsBox,
+                                            ).values
+                                            .where(
+                                              (TenantModel t) =>
+                                                  t.isActive &&
+                                                  t.propertyId == property.id,
+                                            )
+                                            .toList();
+                                    if (activeTenants.isNotEmpty) {
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: <Widget>[
+                                              const Icon(
+                                                Icons.person_outline,
+                                                size: 12,
+                                                color: Color(0xFF2563EB),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                activeTenants.first.name,
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Color(0xFF2563EB),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
+                                ),
                                 const SizedBox(height: 4),
                                 Text(
                                   '${l10n.get('currency')}${property.monthlyRent.toStringAsFixed(0)} / month',
@@ -188,7 +230,7 @@ class PropertyListScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: BlocBuilder<PropertyBloc, PropertyState>(
-        builder: (context, state) {
+        builder: (BuildContext context, PropertyState state) {
           if (state is PropertyLoaded && state.properties.isNotEmpty) {
             return FloatingActionButton(
               onPressed: () => _addProperty(context),
@@ -201,20 +243,20 @@ class PropertyListScreen extends StatelessWidget {
     );
   }
 
-  void _addProperty(BuildContext context) async {
-    final result = await Navigator.push(
+  Future<void> _addProperty(BuildContext context) async {
+    final bool? result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => const AddEditPropertyScreen()),
+      MaterialPageRoute<bool>(builder: (_) => const AddEditPropertyScreen()),
     );
     if (result == true && context.mounted) {
       context.read<PropertyBloc>().add(LoadProperties());
     }
   }
 
-  void _editProperty(BuildContext context, PropertyModel property) async {
-    final result = await Navigator.push(
+  Future<void> _editProperty(BuildContext context, PropertyModel property) async {
+    final bool? result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
+      MaterialPageRoute<bool>(
         builder: (_) => AddEditPropertyScreen(property: property),
       ),
     );
@@ -224,14 +266,14 @@ class PropertyListScreen extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, PropertyModel property) {
-    final l10n = L10n.of(context);
-    showDialog(
+    final L10n l10n = L10n.of(context);
+    showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (BuildContext ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(l10n.get('delete_confirm')),
         content: Text('${l10n.get('delete_property_msg')} "${property.name}"?'),
-        actions: [
+        actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(l10n.get('cancel')),

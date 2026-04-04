@@ -1,8 +1,8 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
-import 'package:json_annotation/json_annotation.dart';
 import 'package:uuid/uuid.dart';
 
+part 'bill_model.freezed.dart';
 part 'bill_model.g.dart';
 
 @HiveType(typeId: 4)
@@ -25,164 +25,68 @@ enum DateSystem {
   bs,
 }
 
+@freezed
 @HiveType(typeId: 2)
-@JsonSerializable()
-class BillModel extends Equatable {
-  @HiveField(0)
-  final String id;
+abstract class BillModel with _$BillModel {
 
-  @HiveField(1)
-  final String billNumber;
+  factory BillModel.fromJson(Map<String, dynamic> json) =>
+      _$BillModelFromJson(json);
+  const BillModel._();
 
-  @HiveField(2)
-  final String tenantId;
-
-  @HiveField(3)
-  final String propertyId;
-
-  @HiveField(4)
-  final int month;
-
-  @HiveField(5)
-  final int year;
-
-  @HiveField(30)
-  final DateSystem dateSystem;
-
-  @HiveField(6)
-  final double rentAmount;
-
-  @HiveField(7)
-  final double electricityCharges;
-
-  @HiveField(8)
-  final double waterCharges;
-
-  @HiveField(10)
-  final double internetCharges;
-
-  @HiveField(14)
-  final double otherCharges;
-
-  @HiveField(15)
-  final String otherChargesDescription;
-
-  @HiveField(16)
-  final double discount;
-
-  @HiveField(17)
-  final double totalAmount;
-
-  @HiveField(18)
-  final double paidAmount;
-
-  @HiveField(19)
-  final DateTime dueDate;
-
-  @HiveField(20)
-  final PaymentStatus status;
-
-  @HiveField(21)
-  final DateTime? paidDate;
-
-  @HiveField(22)
-  final String? paymentMode;
-
-  @HiveField(24)
-  final String? notes;
-
-  @HiveField(25)
-  final String? pdfPath;
-
-  @HiveField(26)
-  final DateTime createdAt;
-
-  @HiveField(27)
-  final DateTime updatedAt;
-
-  @HiveField(28)
-  final Map<String, double> dynamicCharges;
-
-  @HiveField(29)
-  final Map<String, double> dynamicDeductions;
-
-  @HiveField(31)
-  final double? electricityUnits;
-
-  @HiveField(32)
-  final double? waterUnits;
-
-  @HiveField(33)
-  final double? previousElectricityReading;
-
-  @HiveField(34)
-  final double? currentElectricityReading;
-
-  @HiveField(35)
-  final double? previousWaterReading;
-
-  @HiveField(36)
-  final double? currentWaterReading;
-
-  const BillModel({
-    required this.id,
-    required this.billNumber,
-    required this.tenantId,
-    required this.propertyId,
-    required this.month,
-    required this.year,
-    this.dateSystem = DateSystem.ad,
-    required this.rentAmount,
-    required this.electricityCharges,
-    required this.waterCharges,
-    required this.internetCharges,
-    required this.otherCharges,
-    required this.otherChargesDescription,
-    required this.discount,
-    required this.totalAmount,
-    required this.paidAmount,
-    required this.dueDate,
-    required this.status,
-    this.paidDate,
-    this.paymentMode,
-    this.notes,
-    this.pdfPath,
-    required this.createdAt,
-    required this.updatedAt,
-    this.dynamicCharges = const {},
-    this.dynamicDeductions = const {},
-    this.electricityUnits,
-    this.waterUnits,
-    this.previousElectricityReading,
-    this.currentElectricityReading,
-    this.previousWaterReading,
-    this.currentWaterReading,
-  });
+  const factory BillModel({
+    @HiveField(0) required String id,
+    @HiveField(1) required String billNumber,
+    @HiveField(2) required String tenantId,
+    @HiveField(3) required String propertyId,
+    @HiveField(4) required int month,
+    @HiveField(5) required int year,
+    @HiveField(6) required double rentAmount,
+    @HiveField(7) required double electricityCharges,
+    @HiveField(8) required double waterCharges,
+    @HiveField(10) required double internetCharges,
+    @HiveField(14) required double otherCharges,
+    @HiveField(15) required String otherChargesDescription,
+    @HiveField(16) required double discount,
+    @HiveField(17) required double totalAmount,
+    @HiveField(18) required double paidAmount,
+    @HiveField(19) required DateTime dueDate,
+    @HiveField(20) required PaymentStatus status,
+    @HiveField(26) required DateTime createdAt, @HiveField(27) required DateTime updatedAt, @HiveField(21) DateTime? paidDate,
+    @HiveField(22) String? paymentMode,
+    @HiveField(24) String? notes,
+    @HiveField(25) String? pdfPath,
+    @HiveField(28) @Default(<dynamic, dynamic>{}) Map<String, double> dynamicCharges,
+    @HiveField(29) @Default(<dynamic, dynamic>{}) Map<String, double> dynamicDeductions,
+    @HiveField(31) double? electricityUnits,
+    @HiveField(32) double? waterUnits,
+    @HiveField(33) double? previousElectricityReading,
+    @HiveField(34) double? currentElectricityReading,
+    @HiveField(35) double? previousWaterReading,
+    @HiveField(36) double? currentWaterReading,
+  }) = _BillModel;
 
   factory BillModel.create({
     required String tenantId,
     required String propertyId,
     required int month,
     required int year,
-    DateSystem dateSystem = DateSystem.ad,
     required double rentAmount,
-    double electricityCharges = 0,
+    required DateTime dueDate, double electricityCharges = 0,
     double waterCharges = 0,
     double internetCharges = 0,
     double otherCharges = 0,
     String otherChargesDescription = '',
     double discount = 0,
-    Map<String, double> dynamicCharges = const {},
-    Map<String, double> dynamicDeductions = const {},
+    Map<String, double> dynamicCharges = const <String, double>{},
+    Map<String, double> dynamicDeductions = const <String, double>{},
     double? electricityUnits,
     double? waterUnits,
     double? previousElectricityReading,
     double? currentElectricityReading,
     double? previousWaterReading,
     double? currentWaterReading,
-    required DateTime dueDate,
   }) {
-    final totalAmount =
+    final double totalAmount =
         rentAmount +
         electricityCharges +
         waterCharges +
@@ -191,18 +95,18 @@ class BillModel extends Equatable {
         discount;
 
     double extraChargesSum = 0;
-    for (var value in dynamicCharges.values) {
+    for (double value in dynamicCharges.values) {
       extraChargesSum += value;
     }
 
     double deductionsSum = 0;
-    for (var value in dynamicDeductions.values) {
+    for (double value in dynamicDeductions.values) {
       deductionsSum += value;
     }
 
-    final finalTotal = totalAmount + extraChargesSum - deductionsSum;
+    final double finalTotal = totalAmount + extraChargesSum - deductionsSum;
 
-    final now = DateTime.now();
+    final DateTime now = DateTime.now();
     return BillModel(
       id: const Uuid().v4(),
       billNumber:
@@ -211,7 +115,6 @@ class BillModel extends Equatable {
       propertyId: propertyId,
       month: month,
       year: year,
-      dateSystem: dateSystem,
       rentAmount: rentAmount,
       electricityCharges: electricityCharges,
       waterCharges: waterCharges,
@@ -236,114 +139,8 @@ class BillModel extends Equatable {
     );
   }
 
-  BillModel copyWith({
-    String? id,
-    String? billNumber,
-    String? tenantId,
-    String? propertyId,
-    int? month,
-    int? year,
-    DateSystem? dateSystem,
-    double? rentAmount,
-    double? electricityCharges,
-    double? waterCharges,
-    double? internetCharges,
-    double? otherCharges,
-    String? otherChargesDescription,
-    double? discount,
-    double? totalAmount,
-    double? paidAmount,
-    DateTime? dueDate,
-    PaymentStatus? status,
-    DateTime? paidDate,
-    String? paymentMode,
-    String? notes,
-    String? pdfPath,
-    DateTime? updatedAt,
-    Map<String, double>? dynamicCharges,
-    Map<String, double>? dynamicDeductions,
-    double? electricityUnits,
-    double? waterUnits,
-    double? previousElectricityReading,
-    double? currentElectricityReading,
-    double? previousWaterReading,
-    double? currentWaterReading,
-  }) {
-    return BillModel(
-      id: id ?? this.id,
-      billNumber: billNumber ?? this.billNumber,
-      tenantId: tenantId ?? this.tenantId,
-      propertyId: propertyId ?? this.propertyId,
-      month: month ?? this.month,
-      year: year ?? this.year,
-      dateSystem: dateSystem ?? this.dateSystem,
-      rentAmount: rentAmount ?? this.rentAmount,
-      electricityCharges: electricityCharges ?? this.electricityCharges,
-      waterCharges: waterCharges ?? this.waterCharges,
-      internetCharges: internetCharges ?? this.internetCharges,
-      otherCharges: otherCharges ?? this.otherCharges,
-      otherChargesDescription:
-          otherChargesDescription ?? this.otherChargesDescription,
-      discount: discount ?? this.discount,
-      totalAmount: totalAmount ?? this.totalAmount,
-      paidAmount: paidAmount ?? this.paidAmount,
-      dueDate: dueDate ?? this.dueDate,
-      status: status ?? this.status,
-      paidDate: paidDate ?? this.paidDate,
-      paymentMode: paymentMode ?? this.paymentMode,
-      notes: notes ?? this.notes,
-      pdfPath: pdfPath ?? this.pdfPath,
-      createdAt: createdAt,
-      updatedAt: updatedAt ?? DateTime.now(),
-      dynamicCharges: dynamicCharges ?? this.dynamicCharges,
-      dynamicDeductions: dynamicDeductions ?? this.dynamicDeductions,
-      electricityUnits: electricityUnits ?? this.electricityUnits,
-      waterUnits: waterUnits ?? this.waterUnits,
-      previousElectricityReading:
-          previousElectricityReading ?? this.previousElectricityReading,
-      currentElectricityReading:
-          currentElectricityReading ?? this.currentElectricityReading,
-      previousWaterReading: previousWaterReading ?? this.previousWaterReading,
-      currentWaterReading: currentWaterReading ?? this.currentWaterReading,
-    );
-  }
-
   double get outstandingAmount => totalAmount - paidAmount;
   bool get isFullyPaid => paidAmount >= totalAmount;
   bool get isOverdue =>
       dueDate.isBefore(DateTime.now()) && status != PaymentStatus.paid;
-
-  factory BillModel.fromJson(Map<String, dynamic> json) =>
-      _$BillModelFromJson(json);
-  Map<String, dynamic> toJson() => _$BillModelToJson(this);
-
-  @override
-  List<Object?> get props => [
-    id,
-    billNumber,
-    tenantId,
-    propertyId,
-    month,
-    year,
-    dateSystem,
-    rentAmount,
-    electricityCharges,
-    waterCharges,
-    internetCharges,
-    otherCharges,
-    otherChargesDescription,
-    discount,
-    totalAmount,
-    paidAmount,
-    dueDate,
-    status,
-    paidDate,
-    paymentMode,
-    notes,
-    pdfPath,
-    createdAt,
-    updatedAt,
-    dynamicCharges,
-    dynamicDeductions,
-  ];
 }

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:nepali_utils/nepali_utils.dart';
+import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
+import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/screens/add_edit_tenant_screen.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
@@ -11,17 +14,18 @@ class TenantListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final L10n l10n = L10n.of(context);
+    final bool isBS = context.watch<SettingsCubit>().state == DateSystem.bs;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.get('tenants'))),
       body: BlocBuilder<TenantBloc, TenantState>(
-        builder: (context, state) {
+        builder: (BuildContext context, TenantState state) {
           if (state is TenantLoaded) {
             if (state.tenants.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                  children: <Widget>[
                     Icon(
                       Icons.people_outline,
                       size: 64,
@@ -51,9 +55,9 @@ class TenantListScreen extends StatelessWidget {
             return ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
               itemCount: state.tenants.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final tenant = state.tenants[index];
+              separatorBuilder: (BuildContext context, int index) => const SizedBox(height: 10),
+              itemBuilder: (BuildContext context, int index) {
+                final TenantModel tenant = state.tenants[index];
                 return Card(
                   child: InkWell(
                     onTap: () => _editTenant(context, tenant),
@@ -64,7 +68,7 @@ class TenantListScreen extends StatelessWidget {
                         vertical: 14,
                       ),
                       child: Row(
-                        children: [
+                        children: <Widget>[
                           Container(
                             width: 44,
                             height: 44,
@@ -93,9 +97,9 @@ class TenantListScreen extends StatelessWidget {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                              children: <Widget>[
                                 Row(
-                                  children: [
+                                  children: <Widget>[
                                     Flexible(
                                       child: Text(
                                         tenant.name,
@@ -142,10 +146,10 @@ class TenantListScreen extends StatelessWidget {
                                   ),
                                 ),
                                 if (!tenant.isActive &&
-                                    tenant.leftDate != null) ...[
+                                    tenant.leftDate != null) ...<Widget>[
                                   const SizedBox(height: 3),
                                   Row(
-                                    children: [
+                                    children: <Widget>[
                                       const Icon(
                                         Icons.event_busy,
                                         size: 13,
@@ -153,7 +157,7 @@ class TenantListScreen extends StatelessWidget {
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        '${l10n.get('left_date')}: ${DateFormat('dd MMM yyyy').format(tenant.leftDate!)}',
+                                        '${l10n.get('left_date')}: ${isBS ? NepaliDateFormat('dd MMM yyyy').format(tenant.leftDate!.toNepaliDateTime()) : DateFormat('dd MMM yyyy').format(tenant.leftDate!)}',
                                         style: const TextStyle(
                                           fontSize: 11,
                                           color: Color(0xFFDC2626),
@@ -188,7 +192,7 @@ class TenantListScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: BlocBuilder<TenantBloc, TenantState>(
-        builder: (context, state) {
+        builder: (BuildContext context, TenantState state) {
           if (state is TenantLoaded && state.tenants.isNotEmpty) {
             return FloatingActionButton(
               onPressed: () => _addTenant(context),
@@ -201,20 +205,22 @@ class TenantListScreen extends StatelessWidget {
     );
   }
 
-  void _addTenant(BuildContext context) async {
-    final result = await Navigator.push(
+  Future<void> _addTenant(BuildContext context) async {
+    final bool? result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => const AddEditTenantScreen()),
+      MaterialPageRoute<bool>(builder: (_) => const AddEditTenantScreen()),
     );
     if (result == true && context.mounted) {
       context.read<TenantBloc>().add(LoadTenants());
     }
   }
 
-  void _editTenant(BuildContext context, TenantModel tenant) async {
-    final result = await Navigator.push(
+  Future<void> _editTenant(BuildContext context, TenantModel tenant) async {
+    final bool? result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => AddEditTenantScreen(tenant: tenant)),
+      MaterialPageRoute<bool>(
+        builder: (_) => AddEditTenantScreen(tenant: tenant),
+      ),
     );
     if (result == true && context.mounted) {
       context.read<TenantBloc>().add(LoadTenants());
@@ -222,14 +228,14 @@ class TenantListScreen extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, TenantModel tenant) {
-    final l10n = L10n.of(context);
-    showDialog(
+    final L10n l10n = L10n.of(context);
+    showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (BuildContext ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(l10n.get('delete_confirm')),
         content: Text('${l10n.get('delete_tenant_msg')} "${tenant.name}"?'),
-        actions: [
+        actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(l10n.get('cancel')),

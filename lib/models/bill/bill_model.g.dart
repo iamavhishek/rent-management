@@ -23,7 +23,6 @@ class BillModelAdapter extends TypeAdapter<BillModel> {
       propertyId: fields[3] as String,
       month: (fields[4] as num).toInt(),
       year: (fields[5] as num).toInt(),
-      dateSystem: fields[30] == null ? DateSystem.ad : fields[30] as DateSystem,
       rentAmount: (fields[6] as num).toDouble(),
       electricityCharges: (fields[7] as num).toDouble(),
       waterCharges: (fields[8] as num).toDouble(),
@@ -42,10 +41,10 @@ class BillModelAdapter extends TypeAdapter<BillModel> {
       createdAt: fields[26] as DateTime,
       updatedAt: fields[27] as DateTime,
       dynamicCharges: fields[28] == null
-          ? const {}
+          ? {}
           : (fields[28] as Map).cast<String, double>(),
       dynamicDeductions: fields[29] == null
-          ? const {}
+          ? {}
           : (fields[29] as Map).cast<String, double>(),
       electricityUnits: (fields[31] as num?)?.toDouble(),
       waterUnits: (fields[32] as num?)?.toDouble(),
@@ -59,7 +58,7 @@ class BillModelAdapter extends TypeAdapter<BillModel> {
   @override
   void write(BinaryWriter writer, BillModel obj) {
     writer
-      ..writeByte(32)
+      ..writeByte(31)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -110,8 +109,6 @@ class BillModelAdapter extends TypeAdapter<BillModel> {
       ..write(obj.dynamicCharges)
       ..writeByte(29)
       ..write(obj.dynamicDeductions)
-      ..writeByte(30)
-      ..write(obj.dateSystem)
       ..writeByte(31)
       ..write(obj.electricityUnits)
       ..writeByte(32)
@@ -223,16 +220,13 @@ class DateSystemAdapter extends TypeAdapter<DateSystem> {
 // JsonSerializableGenerator
 // **************************************************************************
 
-BillModel _$BillModelFromJson(Map<String, dynamic> json) => BillModel(
+_BillModel _$BillModelFromJson(Map<String, dynamic> json) => _BillModel(
   id: json['id'] as String,
   billNumber: json['billNumber'] as String,
   tenantId: json['tenantId'] as String,
   propertyId: json['propertyId'] as String,
   month: (json['month'] as num).toInt(),
   year: (json['year'] as num).toInt(),
-  dateSystem:
-      $enumDecodeNullable(_$DateSystemEnumMap, json['dateSystem']) ??
-      DateSystem.ad,
   rentAmount: (json['rentAmount'] as num).toDouble(),
   electricityCharges: (json['electricityCharges'] as num).toDouble(),
   waterCharges: (json['waterCharges'] as num).toDouble(),
@@ -272,42 +266,40 @@ BillModel _$BillModelFromJson(Map<String, dynamic> json) => BillModel(
   currentWaterReading: (json['currentWaterReading'] as num?)?.toDouble(),
 );
 
-Map<String, dynamic> _$BillModelToJson(BillModel instance) => <String, dynamic>{
-  'id': instance.id,
-  'billNumber': instance.billNumber,
-  'tenantId': instance.tenantId,
-  'propertyId': instance.propertyId,
-  'month': instance.month,
-  'year': instance.year,
-  'dateSystem': _$DateSystemEnumMap[instance.dateSystem]!,
-  'rentAmount': instance.rentAmount,
-  'electricityCharges': instance.electricityCharges,
-  'waterCharges': instance.waterCharges,
-  'internetCharges': instance.internetCharges,
-  'otherCharges': instance.otherCharges,
-  'otherChargesDescription': instance.otherChargesDescription,
-  'discount': instance.discount,
-  'totalAmount': instance.totalAmount,
-  'paidAmount': instance.paidAmount,
-  'dueDate': instance.dueDate.toIso8601String(),
-  'status': _$PaymentStatusEnumMap[instance.status]!,
-  'paidDate': instance.paidDate?.toIso8601String(),
-  'paymentMode': instance.paymentMode,
-  'notes': instance.notes,
-  'pdfPath': instance.pdfPath,
-  'createdAt': instance.createdAt.toIso8601String(),
-  'updatedAt': instance.updatedAt.toIso8601String(),
-  'dynamicCharges': instance.dynamicCharges,
-  'dynamicDeductions': instance.dynamicDeductions,
-  'electricityUnits': instance.electricityUnits,
-  'waterUnits': instance.waterUnits,
-  'previousElectricityReading': instance.previousElectricityReading,
-  'currentElectricityReading': instance.currentElectricityReading,
-  'previousWaterReading': instance.previousWaterReading,
-  'currentWaterReading': instance.currentWaterReading,
-};
-
-const _$DateSystemEnumMap = {DateSystem.ad: 'ad', DateSystem.bs: 'bs'};
+Map<String, dynamic> _$BillModelToJson(_BillModel instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'billNumber': instance.billNumber,
+      'tenantId': instance.tenantId,
+      'propertyId': instance.propertyId,
+      'month': instance.month,
+      'year': instance.year,
+      'rentAmount': instance.rentAmount,
+      'electricityCharges': instance.electricityCharges,
+      'waterCharges': instance.waterCharges,
+      'internetCharges': instance.internetCharges,
+      'otherCharges': instance.otherCharges,
+      'otherChargesDescription': instance.otherChargesDescription,
+      'discount': instance.discount,
+      'totalAmount': instance.totalAmount,
+      'paidAmount': instance.paidAmount,
+      'dueDate': instance.dueDate.toIso8601String(),
+      'status': _$PaymentStatusEnumMap[instance.status]!,
+      'paidDate': instance.paidDate?.toIso8601String(),
+      'paymentMode': instance.paymentMode,
+      'notes': instance.notes,
+      'pdfPath': instance.pdfPath,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'dynamicCharges': instance.dynamicCharges,
+      'dynamicDeductions': instance.dynamicDeductions,
+      'electricityUnits': instance.electricityUnits,
+      'waterUnits': instance.waterUnits,
+      'previousElectricityReading': instance.previousElectricityReading,
+      'currentElectricityReading': instance.currentElectricityReading,
+      'previousWaterReading': instance.previousWaterReading,
+      'currentWaterReading': instance.currentWaterReading,
+    };
 
 const _$PaymentStatusEnumMap = {
   PaymentStatus.pending: 'pending',

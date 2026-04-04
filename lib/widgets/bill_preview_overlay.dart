@@ -4,8 +4,13 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
+import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
+import 'package:rent_bill_maker/models/property/property_model.dart';
+import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 import 'package:rent_bill_maker/widgets/bill_receipt_widget.dart';
 import 'package:share_plus/share_plus.dart';
@@ -33,7 +38,9 @@ class _BillPreviewOverlayState extends State<BillPreviewOverlay> {
       final String shareText =
           '${L10n.of(context).get('share_bill')} - ${widget.bill.billNumber}';
       final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       final Uint8List pngBytes = byteData!.buffer.asUint8List();
 
       final Directory dir = await getApplicationDocumentsDirectory();
@@ -93,10 +100,46 @@ class _BillPreviewOverlayState extends State<BillPreviewOverlay> {
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
           child: RepaintBoundary(
             key: _receiptKey,
-            child: BillReceiptWidget(bill: widget.bill),
+            child: _BillData(bill: widget.bill),
           ),
         ),
       ),
     );
   }
+}
+
+class _BillData extends StatelessWidget {
+  const _BillData({required this.bill});
+  final BillModel bill;
+
+  @override
+  Widget build(BuildContext context) =>
+      BlocBuilder<PropertyBloc, PropertyState>(
+        builder: (_, PropertyState propertyState) {
+          final PropertyModel? property = propertyState is PropertyLoaded
+              ? propertyState.properties.firstWhere(
+                  (PropertyModel p) => p.id == bill.propertyId,
+                  orElse: () => throw Exception('Property not found'),
+                )
+              : null;
+          return BlocBuilder<TenantBloc, TenantState>(
+            builder: (_, TenantState tenantState) {
+              final TenantModel? tenant = tenantState is TenantLoaded
+                  ? tenantState.tenants.firstWhere(
+                      (TenantModel t) => t.id == bill.tenantId,
+                      orElse: () => throw Exception('Tenant not found'),
+                    )
+                  : null;
+              if (property == null || tenant == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return BillReceiptWidget(
+                bill: bill,
+                property: property,
+                tenant: tenant,
+              );
+            },
+          );
+        },
+      );
 }

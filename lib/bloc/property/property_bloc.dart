@@ -1,24 +1,22 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
-import 'package:rent_bill_maker/utils/constants.dart';
+import 'package:rent_bill_maker/repositories/property_repository.dart';
 
 part 'property_event.dart';
 part 'property_state.dart';
 
 class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
-
-  PropertyBloc() : super(PropertyInitial()) {
-    propertyBox = Hive.box<PropertyModel>(Constants.propertiesBox);
-
+  PropertyBloc({required PropertyRepository propertyRepository})
+    : _propertyRepository = propertyRepository,
+      super(PropertyInitial()) {
     on<LoadProperties>(_onLoadProperties);
     on<AddProperty>(_onAddProperty);
     on<UpdateProperty>(_onUpdateProperty);
     on<DeleteProperty>(_onDeleteProperty);
     on<GetPropertyById>(_onGetPropertyById);
   }
-  late Box<PropertyModel> propertyBox;
+  final PropertyRepository _propertyRepository;
 
   Future<void> _onLoadProperties(
     LoadProperties event,
@@ -26,7 +24,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
   ) async {
     emit(PropertyLoading());
     try {
-      final List<PropertyModel> properties = propertyBox.values.toList();
+      final List<PropertyModel> properties = await _propertyRepository.getAll();
       emit(PropertyLoaded(properties: properties));
     } catch (e) {
       emit(PropertyError(message: 'Failed to load properties: $e'));
@@ -39,8 +37,8 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
   ) async {
     emit(PropertyLoading());
     try {
-      await propertyBox.put(event.property.id, event.property);
-      final List<PropertyModel> properties = propertyBox.values.toList();
+      await _propertyRepository.add(event.property);
+      final List<PropertyModel> properties = await _propertyRepository.getAll();
       emit(PropertyLoaded(properties: properties));
     } catch (e) {
       emit(PropertyError(message: 'Failed to add property: $e'));
@@ -53,8 +51,8 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
   ) async {
     emit(PropertyLoading());
     try {
-      await propertyBox.put(event.property.id, event.property);
-      final List<PropertyModel> properties = propertyBox.values.toList();
+      await _propertyRepository.update(event.property);
+      final List<PropertyModel> properties = await _propertyRepository.getAll();
       emit(PropertyLoaded(properties: properties));
     } catch (e) {
       emit(PropertyError(message: 'Failed to update property: $e'));
@@ -67,8 +65,8 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
   ) async {
     emit(PropertyLoading());
     try {
-      await propertyBox.delete(event.id);
-      final List<PropertyModel> properties = propertyBox.values.toList();
+      await _propertyRepository.delete(event.id);
+      final List<PropertyModel> properties = await _propertyRepository.getAll();
       emit(PropertyLoaded(properties: properties));
     } catch (e) {
       emit(PropertyError(message: 'Failed to delete property: $e'));
@@ -81,7 +79,9 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
   ) async {
     emit(PropertyLoading());
     try {
-      final PropertyModel? property = propertyBox.get(event.id);
+      final PropertyModel? property = await _propertyRepository.getById(
+        event.id,
+      );
       if (property != null) {
         emit(PropertyLoaded(properties: <PropertyModel>[property]));
       } else {

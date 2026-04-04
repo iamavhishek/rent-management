@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:nepali_utils/nepali_utils.dart';
 import 'package:path_provider/path_provider.dart';
@@ -593,7 +592,9 @@ class BillCard extends StatelessWidget {
 
         // Update bill with image path
         final BillModel updatedBill = bill.copyWith(pdfPath: file.path);
-        await Hive.box<BillModel>(Constants.billsBox).put(bill.id, updatedBill);
+        if (context.mounted) {
+          context.read<BillBloc>().add(UpdateBill(updatedBill));
+        }
 
         await SharePlus.instance.share(
           ShareParams(

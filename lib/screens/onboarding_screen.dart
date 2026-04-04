@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:rent_bill_maker/bloc/language/language_cubit.dart';
 import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
 import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
@@ -9,7 +8,6 @@ import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/screens/home_screen.dart';
-import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -58,7 +56,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   void _completeOnboarding() {
-    Hive.box<dynamic>(Constants.settingsBox).put('onboarding_completed', true);
+    context.read<SettingsCubit>().setOnboardingComplete();
     Navigator.of(context).pushAndRemoveUntil(
       PageRouteBuilder<void>(
         pageBuilder: (_, _, _) => const HomeScreen(),

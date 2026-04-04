@@ -1,18 +1,13 @@
-import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:nepali_utils/nepali_utils.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
-import 'package:rent_bill_maker/models/property/property_model.dart';
-import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
-import 'package:rent_bill_maker/utils/constants.dart';
+import 'package:rent_bill_maker/repositories/bill_repository.dart';
 
 class ReportService {
-  final Box<BillModel> billBox = Hive.box<BillModel>(Constants.billsBox);
-  final Box<PropertyModel> propertyBox = Hive.box<PropertyModel>(
-    Constants.propertiesBox,
-  );
-  final Box<TenantModel> tenantBox = Hive.box<TenantModel>(
-    Constants.tenantsBox,
-  );
+  ReportService({required BillRepository billRepository})
+    : _billRepository = billRepository;
+  final BillRepository _billRepository;
+
+  Future<List<BillModel>> _getBills() => _billRepository.getAll();
 
   Future<Map<String, dynamic>> getMonthlyReport(
     int month,
@@ -52,10 +47,16 @@ class ReportService {
       ).toDateTime().subtract(const Duration(seconds: 1));
     }
 
-    final List<BillModel> allBills = billBox.values.toList();
+    final List<BillModel> allBills = await _getBills();
 
     // A bill BELONGS to this period if its storage year/month exactly matches
-    final List<BillModel> periodBills = allBills.where((BillModel bill) => bill.month == targetStorageMonth && bill.year == targetStorageYear).toList();
+    final List<BillModel> periodBills = allBills
+        .where(
+          (BillModel bill) =>
+              bill.month == targetStorageMonth &&
+              bill.year == targetStorageYear,
+        )
+        .toList();
 
     // A bill is COLLECTED in this period if paidDate falls within the timeframe
     final List<BillModel> collectionBills = allBills.where((BillModel bill) {
@@ -127,7 +128,7 @@ class ReportService {
       ).toDateTime().subtract(const Duration(seconds: 1));
     }
 
-    final List<BillModel> allBills = billBox.values.toList();
+    final List<BillModel> allBills = await _getBills();
 
     // Filter bills BELONGING to this timeframe
     final List<BillModel> periodBills = allBills.where((BillModel bill) {
@@ -135,7 +136,11 @@ class ReportService {
         return bill.year == year;
       } else {
         // Find if its storage date maps to this target year in BS
-        final NepaliDateTime midDate = DateTime(bill.year, bill.month, 15).toNepaliDateTime();
+        final NepaliDateTime midDate = DateTime(
+          bill.year,
+          bill.month,
+          15,
+        ).toNepaliDateTime();
         return midDate.year == year;
       }
     }).toList();
@@ -181,7 +186,11 @@ class ReportService {
       if (dateSystem == DateSystem.ad) {
         month = bill.month;
       } else {
-        final NepaliDateTime midDate = DateTime(bill.year, bill.month, 15).toNepaliDateTime();
+        final NepaliDateTime midDate = DateTime(
+          bill.year,
+          bill.month,
+          15,
+        ).toNepaliDateTime();
         month = midDate.month;
       }
       if (month >= 1 && month <= 12) {

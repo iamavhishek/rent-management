@@ -59,20 +59,28 @@ lib/
     tenant/tenant_model.freezed.dart
     tenant/tenant_model.g.dart
 
-  bloc/
+  repositories/                      # DATA ACCESS LAYER - only layer that talks to Hive
+    property_repository.dart         # Properties CRUD via Hive box
+    tenant_repository.dart           # Tenants CRUD + getByPropertyId + getActiveOnly
+    bill_repository.dart             # Bills CRUD + queries (overdue, pending, byTenant, byProperty)
+    settings_repository.dart         # Hive settings box - language, dateSystem, onboarding flag
+
+  bloc/                              # BUSINESS LOGIC LAYER - uses repositories, never Hive
     bill/bill_bloc.dart              # BillBloc - CRUD, mark paid/unpaid, overdue/pending queries
     bill/bill_event.dart             # 11 event types
     bill/bill_state.dart             # BillInitial, BillLoading, BillLoaded, BillError
-    language/language_cubit.dart     # LanguageCubit - toggle EN/NE, persists to Hive
+    language/language_cubit.dart     # LanguageCubit - toggle EN/NE, uses SettingsRepository
     property/property_bloc.dart      # PropertyBloc - CRUD
     property/property_event.dart     # 5 event types
     property/property_state.dart     # PropertyInitial, PropertyLoading, PropertyLoaded, PropertyError
-    settings/settings_cubit.dart     # SettingsCubit - AD/BS date system toggle, persists to Hive
+    reports/reports_cubit.dart       # ReportsCubit - delegates to ReportService
+    reports/reports_state.dart       # ReportsInitial, ReportsLoading, ReportsLoaded, ReportsError
+    settings/settings_cubit.dart     # SettingsCubit - AD/BS date system, uses SettingsRepository
     tenant/tenant_bloc.dart          # TenantBloc - CRUD, GetTenantsByProperty
     tenant/tenant_event.dart         # 6 event types
     tenant/tenant_state.dart         # TenantInitial, TenantLoading, TenantLoaded, TenantError
 
-  screens/
+  screens/                           # UI LAYER - only talks to BLoCs/Cubits, no direct Hive/Repo
     onboarding_screen.dart           # 4-step wizard: Language -> Calendar -> Property -> Tenant
     home_screen.dart                 # Main shell with BottomNavigationBar (Dashboard, Bills, Reports, Settings)
     create_bill_screen.dart          # Complex reactive form for bill generation
@@ -82,13 +90,13 @@ lib/
     property_list_screen.dart        # List/search properties, FAB to add
     add_edit_property_screen.dart    # Form for property CRUD
     settings_screen.dart             # Language/Calendar toggles, nav to tenant/property lists
-    reports_screen.dart              # Monthly + yearly financial analytics with charts
+    reports_screen.dart              # Monthly + yearly analytics via ReportsCubit
 
   widgets/
     stat_card.dart                   # Dashboard metric card with icon + gradient background
-    bill_card.dart                   # Primary bill display in lists, handles swipe actions, receipt overlay
-    bill_receipt_widget.dart         # Receipt template for PDF/share rendering
-    bill_preview_overlay.dart        # Full-screen bill preview overlay
+    bill_card.dart                   # Primary bill display in lists, swipe actions, receipt overlay
+    bill_receipt_widget.dart         # Receipt template (receives property/tenant as constructor params)
+    bill_preview_overlay.dart        # Full-screen preview (resolves property/tenant from BLoC states)
 
   services/
     report_service.dart              # Financial analytics: monthly/yearly collection stats
@@ -488,9 +496,20 @@ Contains `PropertyModelAdapter`, `TenantModelAdapter`, `BillModelAdapter`, `Paym
 
 ## Key Architectural Decisions
 
+### Architecture: Strict 4-Layer Separation
+
+```
+Hive <-> Repository <-> BLoC/Cubit <-> UI (Screens + Widgets)
+```
+
+- **Repository layer** (`lib/repositories/`): Only layer that directly accesses Hive boxes
+- **BLoC/Cubit layer** (`lib/bloc/`): Calls repository methods, emits state - never imports `hive_ce_flutter`
+- **UI layer** (`lib/screens/`, `lib/widgets/`): Dispatches events to BLoCs, reads BLoC state via `BlocBuilder/BlocListener`. No imports of `hive_ce_flutter`, no direct repository construction
+- **Services** (`lib/services/`): Called by Cubits (e.g., `ReportsCubit` -> `ReportService`), not directly from UI
+
 ### App Initialization & Routing
-- No go_router - direct widget decision in `main.dart` based on Hive settings flag.
-- Onboarding is a one-time screen that sets `onboarding_completed` in Hive.
+- No go_router - direct widget decision in `main.dart` based on `SettingsRepository`.
+- Onboarding is a one-time screen that calls `SettingsCubit.setOnboardingComplete()`.
 - Language/Calendar can be changed later in Settings. Property/Tenant can be added later via Settings -> Data Management.
 
 ### Form Pattern
@@ -499,19 +518,26 @@ Contains `PropertyModelAdapter`, `TenantModelAdapter`, `BillModelAdapter`, `Paym
 - Dynamic charges/deductions: users add arbitrary named charges via a Map<String, double>.
 
 ### State Pattern
-- BLoC for CRDT-heavy entities (Property, Tenant, Bill) - always emit full list on change.
-- Cubit for simple preferences (Language, Settings) - emit single value.
-- All BLoCs are instantiated once in main.dart with `MultiBlocProvider`, no route-level providers.
+- BLoC for data entities (Property, Tenant, Bill) - always emit full list on change.
+- Cubit for simple preferences (Language, Settings, Reports) - emit single value or loaded state.
+- All BLoCs/Cubits are instantiated once in main.dart with `MultiBlocProvider`, no route-level providers.
+- Repositories are created in main.dart and injected into BLoC constructors.
 
-### Hive Usage
-- Boxes are opened directly in main.dart, accessed via `Hive.box<T>()` everywhere.
-- BLoCs store their `Box<T>` as a late field after construction.
-- No repository/service abstraction layer between BLoCs and Hive - BLoCs interact directly with boxes.
+### Repository Pattern
+
+Each repository wraps a single Hive box and provides a clean async API:
+
+| Repository | Box | Key Methods |
+|------------|-----|------------|
+| `PropertyRepository` | `PropertyModel` | getAll, getById, add, update, delete |
+| `TenantRepository` | `TenantModel` | getAll, getById, getByPropertyId, getActiveOnly, add, update, delete |
+| `BillRepository` | `BillModel` | getAll, getById, getByTenant, getByProperty, getOverdue, getPending, add, update, delete, markAsPaid, markAsUnpaid, updatePdfPath |
+| `SettingsRepository` | `dynamic` | getLanguage/setLanguage, getDateSystem/setDateSystem, isOnboardingComplete/setOnboardingComplete |
 
 ### Receipt/PDF
-- `BillReceiptWidget` renders a visual receipt.
-- `BillCard` can share as PDF using `pdf` + `printing` + `share_plus`.
-- `BillPreviewOverlay` shows the receipt in a full-screen scrollable overlay.
+- `BillReceiptWidget` renders a visual receipt. Receives `property` and `tenant` as required constructor params (no direct data access).
+- `BillCard` triggers `UpdateBill` event to BillBloc to save pdfPath after share.
+- `BillPreviewOverlay` uses `BlocBuilder<PropertyBloc>` + `BlocBuilder<TenantBloc>` to resolve property/tenant from state, then passes to `BillReceiptWidget`.
 
 ---
 

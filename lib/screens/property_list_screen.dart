@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
+import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/screens/add_edit_property_screen.dart';
-import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class PropertyListScreen extends StatelessWidget {
@@ -98,19 +97,13 @@ class PropertyListScreen extends StatelessWidget {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Builder(
-                                      builder: (BuildContext context) {
+                                    BlocBuilder<TenantBloc, TenantState>(
+                                      builder: (_, TenantState tenantState) {
                                         final List<TenantModel> activeTenants =
-                                            Hive.box<TenantModel>(
-                                                  Constants.tenantsBox,
-                                                ).values
-                                                .where(
-                                                  (TenantModel t) =>
-                                                      t.isActive &&
-                                                      t.propertyId ==
-                                                          property.id,
-                                                )
-                                                .toList();
+                                            _activeTenantsFor(
+                                              tenantState,
+                                              property.id,
+                                            );
                                         final bool isOccupied =
                                             activeTenants.isNotEmpty;
                                         return Container(
@@ -153,18 +146,13 @@ class PropertyListScreen extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                Builder(
-                                  builder: (BuildContext context) {
+                                BlocBuilder<TenantBloc, TenantState>(
+                                  builder: (_, TenantState tenantState) {
                                     final List<TenantModel> activeTenants =
-                                        Hive.box<TenantModel>(
-                                              Constants.tenantsBox,
-                                            ).values
-                                            .where(
-                                              (TenantModel t) =>
-                                                  t.isActive &&
-                                                  t.propertyId == property.id,
-                                            )
-                                            .toList();
+                                        _activeTenantsFor(
+                                          tenantState,
+                                          property.id,
+                                        );
                                     if (activeTenants.isNotEmpty) {
                                       return Column(
                                         crossAxisAlignment:
@@ -263,6 +251,18 @@ class PropertyListScreen extends StatelessWidget {
     if (result == true && context.mounted) {
       context.read<PropertyBloc>().add(LoadProperties());
     }
+  }
+
+  static List<TenantModel> _activeTenantsFor(
+    TenantState tenantState,
+    String propertyId,
+  ) {
+    if (tenantState is! TenantLoaded) return <TenantModel>[];
+    return tenantState.tenants
+        .where(
+          (TenantModel t) => t.isActive && t.propertyId == propertyId,
+        )
+        .toList();
   }
 
   void _confirmDelete(BuildContext context, PropertyModel property) {

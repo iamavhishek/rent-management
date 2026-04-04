@@ -1,36 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:nepali_utils/nepali_utils.dart';
 import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
-import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class BillReceiptWidget extends StatelessWidget {
 
   const BillReceiptWidget({
-    required this.bill, super.key,
+    required this.bill,
+    required this.property,
+    required this.tenant,
+    super.key,
     this.padding = const EdgeInsets.all(28),
   });
   final BillModel bill;
+  final PropertyModel property;
+  final TenantModel tenant;
   final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {
-    final Box<PropertyModel> propertyBox = Hive.box<PropertyModel>(Constants.propertiesBox);
-    final Box<TenantModel> tenantBox = Hive.box<TenantModel>(Constants.tenantsBox);
     final L10n l10n = L10n.of(context);
-
-    final PropertyModel? property = propertyBox.get(bill.propertyId);
-    final TenantModel? tenant = tenantBox.get(bill.tenantId);
-
-    if (property == null || tenant == null) {
-      return const Center(child: Text('Data not found'));
-    }
 
     String monthName;
     String dueDateStr;

@@ -2,18 +2,17 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:nepali_date_picker/nepali_date_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:rent_bill_maker/bloc/bill/bill_bloc.dart';
 import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
 import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
-import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class AddEditTenantScreen extends StatefulWidget {
@@ -120,7 +119,9 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
         final Directory dir = await getApplicationDocumentsDirectory();
         final String fileName =
             'citizenship_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final File savedFile = await File(image.path).copy('${dir.path}/$fileName');
+        final File savedFile = await File(
+          image.path,
+        ).copy('${dir.path}/$fileName');
         setState(() {
           _citizenshipImagePath = savedFile.path;
         });
@@ -212,31 +213,45 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                               ),
                               items: state.properties
                                   .where((PropertyModel property) {
-                                    final List<TenantModel> activeTenants = Hive.box<TenantModel>(
-                                      Constants.tenantsBox,
-                                    ).values.where((TenantModel t) => t.isActive).toList();
-                                    final Set<String> activePropertyIds = activeTenants
-                                        .map((TenantModel t) => t.propertyId)
-                                        .toSet();
+                                    final Set<String> activePropertyIds =
+                                        <String>{};
+                                    final TenantState tenantState = context
+                                        .read<TenantBloc>()
+                                        .state;
+                                    if (tenantState is TenantLoaded) {
+                                      for (final TenantModel t
+                                          in tenantState.tenants) {
+                                        if (t.isActive) {
+                                          activePropertyIds.add(t.propertyId);
+                                        }
+                                      }
+                                    }
                                     return !activePropertyIds.contains(
                                           property.id,
                                         ) ||
                                         property.id ==
                                             widget.tenant?.propertyId;
                                   })
-                                  .map((PropertyModel property) => DropdownMenuItem<String>(
+                                  .map(
+                                    (
+                                      PropertyModel property,
+                                    ) => DropdownMenuItem<String>(
                                       value: property.id,
                                       child: Text(
                                         property.unitNumber.isNotEmpty
                                             ? '${property.name} - ${property.unitNumber}'
                                             : property.name,
                                       ),
-                                    ))
+                                    ),
+                                  )
                                   .toList(),
                               onChanged: (String? value) {
                                 setState(() => _selectedPropertyId = value);
                                 if (!isEdit && value != null) {
-                                  _loadPreviousReadingsForProperty(value);
+                                  _loadPreviousReadingsForProperty(
+                                    context,
+                                    value,
+                                  );
                                 }
                               },
                               validator: (String? v) =>
@@ -288,16 +303,17 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                         InkWell(
                           onTap: () async {
                             if (isBS) {
-                              final NepaliDateTime? date = await showNepaliDatePicker(
-                                context: context,
-                                initialDate:
-                                    _leftDate?.toNepaliDateTime() ??
-                                    NepaliDateTime.now(),
-                                firstDate: NepaliDateTime(2000),
-                                lastDate: NepaliDateTime.now().add(
-                                  const Duration(days: 365),
-                                ),
-                              );
+                              final NepaliDateTime? date =
+                                  await showNepaliDatePicker(
+                                    context: context,
+                                    initialDate:
+                                        _leftDate?.toNepaliDateTime() ??
+                                        NepaliDateTime.now(),
+                                    firstDate: NepaliDateTime(2000),
+                                    lastDate: NepaliDateTime.now().add(
+                                      const Duration(days: 365),
+                                    ),
+                                  );
                               if (date != null) {
                                 setState(() => _leftDate = date.toDateTime());
                               }
@@ -357,16 +373,17 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
                       InkWell(
                         onTap: () async {
                           if (isBS) {
-                            final NepaliDateTime? date = await showNepaliDatePicker(
-                              context: context,
-                              initialDate:
-                                  _moveInDate?.toNepaliDateTime() ??
-                                  NepaliDateTime.now(),
-                              firstDate: NepaliDateTime(2000),
-                              lastDate: NepaliDateTime.now().add(
-                                const Duration(days: 365),
-                              ),
-                            );
+                            final NepaliDateTime? date =
+                                await showNepaliDatePicker(
+                                  context: context,
+                                  initialDate:
+                                      _moveInDate?.toNepaliDateTime() ??
+                                      NepaliDateTime.now(),
+                                  firstDate: NepaliDateTime(2000),
+                                  lastDate: NepaliDateTime.now().add(
+                                    const Duration(days: 365),
+                                  ),
+                                );
                             if (date != null) {
                               setState(() => _moveInDate = date.toDateTime());
                             }
@@ -594,39 +611,48 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
     required IconData icon,
     required List<Widget> children,
   }) => Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(icon, size: 18, color: const Color(0xFF059669)),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(icon, size: 18, color: const Color(0xFF059669)),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            ...children,
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
       ),
-    );
+    ),
+  );
 
-  void _loadPreviousReadingsForProperty(String propertyId) {
-    final Box<BillModel> billBox = Hive.box<BillModel>(Constants.billsBox);
-    final List<BillModel> bills =
-        billBox.values.where((BillModel b) => b.propertyId == propertyId).toList()
-          ..sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
+  void _loadPreviousReadingsForProperty(
+    BuildContext context,
+    String propertyId,
+  ) {
+    final BillState billState = context.read<BillBloc>().state;
+    final List<BillModel> bills = billState is BillLoaded
+        ? billState.bills
+              .where((BillModel b) => b.propertyId == propertyId)
+              .toList()
+        : <BillModel>[];
+    final List<BillModel> sortedBills = bills
+      ..sort(
+        (BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt),
+      );
 
-    if (bills.isNotEmpty) {
-      final BillModel lastBill = bills.first;
+    if (sortedBills.isNotEmpty) {
+      final BillModel lastBill = sortedBills.first;
       setState(() {
         if (lastBill.currentElectricityReading != null) {
           _elecInitialController.text = lastBill.currentElectricityReading!
@@ -712,18 +738,18 @@ class _InfoBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(icon, color: Colors.orange, size: 20),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
-        ],
-      ),
-    );
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: Colors.orange.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
+    ),
+    child: Row(
+      children: <Widget>[
+        Icon(icon, color: Colors.orange, size: 20),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
+      ],
+    ),
+  );
 }

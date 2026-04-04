@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:nepali_date_picker/nepali_date_picker.dart';
 import 'package:nested/nested.dart';
@@ -11,7 +10,6 @@ import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
-import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class DynamicField {
@@ -417,23 +415,15 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
                                         (TenantModel t) => t.id == value,
                                       );
 
-                                  final Box<BillModel> billBox =
-                                      Hive.box<BillModel>(
-                                        Constants.billsBox,
-                                      );
-                                  final List<BillModel> lastBill =
-                                      billBox.values
-                                          .where(
-                                            (BillModel b) =>
-                                                b.tenantId == tenant.id,
-                                          )
-                                          .toList()
-                                        ..sort(
-                                          (BillModel a, BillModel b) =>
-                                              b.createdAt.compareTo(
-                                                a.createdAt,
-                                              ),
-                                        );
+                                  final BillState billState =
+                                      context.read<BillBloc>().state;
+                                  final List<BillModel> lastBill = <BillModel>[
+                                    if (billState is BillLoaded)
+                                      ...billState.bills.where(
+                                        (BillModel b) =>
+                                            b.tenantId == tenant.id,
+                                      ),
+                                  ];
 
                                   double prevElec =
                                       tenant.initialElectricityReading;

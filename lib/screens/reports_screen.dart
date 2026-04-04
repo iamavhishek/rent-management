@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nepali_utils/nepali_utils.dart';
+import 'package:rent_bill_maker/bloc/reports/reports_cubit.dart';
 import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
-import 'package:rent_bill_maker/services/report_service.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -14,11 +14,8 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  final ReportService _reportService = ReportService();
   late int _selectedYear;
   late int _selectedMonth;
-  Map<String, dynamic>? _monthlyReport;
-  Map<String, dynamic>? _yearlyReport;
 
   @override
   void initState() {
@@ -38,50 +35,37 @@ class _ReportsScreenState extends State<ReportsScreen> {
     });
   }
 
-  Future<void> _loadReports() async {
+  void _loadReports() {
     if (!mounted) return;
-    final bool isBS = context.read<SettingsCubit>().state == DateSystem.bs;
-    final Map<String, dynamic> monthly = await _reportService.getMonthlyReport(
+    final DateSystem dateSystem = context.read<SettingsCubit>().state;
+    context.read<ReportsCubit>().loadReports(
       _selectedMonth,
       _selectedYear,
-      isBS ? DateSystem.bs : DateSystem.ad,
+      dateSystem,
     );
-    final Map<String, dynamic> yearly = await _reportService.getYearlyReport(
-      _selectedYear,
-      isBS ? DateSystem.bs : DateSystem.ad,
-    );
-    if (!mounted) return;
-    setState(() {
-      _monthlyReport = monthly;
-      _yearlyReport = yearly;
-    });
   }
 
   @override
   Widget build(BuildContext context) => BlocListener<SettingsCubit, DateSystem>(
     listener: (BuildContext context, DateSystem state) {
       final bool isBS = state == DateSystem.bs;
-      setState(() {
-        if (isBS && _selectedYear < 2050) {
-          // AD -> BS conversion
-          final NepaliDateTime bsDate = DateTime(
-            _selectedYear,
-            _selectedMonth,
-            15,
-          ).toNepaliDateTime();
-          _selectedYear = bsDate.year;
-          _selectedMonth = bsDate.month;
-        } else if (!isBS && _selectedYear > 2050) {
-          // BS -> AD conversion
-          final DateTime adDate = NepaliDateTime(
-            _selectedYear,
-            _selectedMonth,
-            15,
-          ).toDateTime();
-          _selectedYear = adDate.year;
-          _selectedMonth = adDate.month;
-        }
-      });
+      if (isBS && _selectedYear < 2050) {
+        final NepaliDateTime bsDate = DateTime(
+          _selectedYear,
+          _selectedMonth,
+          15,
+        ).toNepaliDateTime();
+        _selectedYear = bsDate.year;
+        _selectedMonth = bsDate.month;
+      } else if (!isBS && _selectedYear > 2050) {
+        final DateTime adDate = NepaliDateTime(
+          _selectedYear,
+          _selectedMonth,
+          15,
+        ).toDateTime();
+        _selectedYear = adDate.year;
+        _selectedMonth = adDate.month;
+      }
       _loadReports();
     },
     child: BlocBuilder<SettingsCubit, DateSystem>(
@@ -90,7 +74,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         final L10n l10n = L10n.of(context);
         return SafeArea(
           child: RefreshIndicator(
-            onRefresh: _loadReports,
+            onRefresh: () async => _loadReports(),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               children: <Widget>[
@@ -99,8 +83,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 16),
-
-                // Month/Year selector
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -131,10 +113,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 ),
                               );
                             }),
-                            onChanged: (int? v) async {
+                            onChanged: (int? v) {
                               if (v != null) {
                                 setState(() => _selectedMonth = v);
-                                await _loadReports();
+                                _loadReports();
                               }
                             },
                           ),
@@ -166,7 +148,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               if (!years.contains(_selectedYear)) {
                                 years.add(_selectedYear);
                               }
-                              // Ensure unique items and sort
                               final List<int> uniqueYears =
                                   years.toSet().toList()..sort();
                               return uniqueYears
@@ -178,10 +159,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   )
                                   .toList();
                             })(),
-                            onChanged: (int? v) async {
+                            onChanged: (int? v) {
                               if (v != null) {
                                 setState(() => _selectedYear = v);
-                                await _loadReports();
+                                _loadReports();
                               }
                             },
                           ),
@@ -190,130 +171,145 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
-                // Monthly report
-                if (_monthlyReport != null) ...<Widget>[
-                  _CardWithTitle(
-                    title:
-                        '${l10n.get('monthly_report')} - ${l10n.getMonthName(_selectedMonth, isBS: isBS)} $_selectedYear',
-                    child: Column(
+                BlocBuilder<ReportsCubit, ReportsState>(
+                  builder: (BuildContext context, ReportsState state) {
+                    if (state is! ReportsLoaded) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final Map<String, dynamic> monthlyReport =
+                        state.monthlyReport;
+                    final Map<String, dynamic> yearlyReport =
+                        state.yearlyReport;
+                    return Column(
                       children: <Widget>[
-                        _statRow(
-                          l10n.get('total_bills'),
-                          '${_monthlyReport!['totalBills']}',
-                        ),
-                        _statRow(
-                          l10n.get('collected_rent'),
-                          '${l10n.get('currency')}${(_monthlyReport!['totalRentCollected'] as double).toStringAsFixed(0)}',
-                          valueColor: const Color(0xFF16A34A),
-                        ),
-                        _statRow(
-                          l10n.get('pending_amount'),
-                          '${l10n.get('currency')}${(_monthlyReport!['totalPending'] as double).toStringAsFixed(0)}',
-                          valueColor: const Color(0xFFF59E0B),
-                        ),
-                        _statRow(
-                          l10n.get('overdue_amount'),
-                          '${l10n.get('currency')}${(_monthlyReport!['totalOverdue'] as double).toStringAsFixed(0)}',
-                          valueColor: const Color(0xFFDC2626),
-                        ),
-                        const Divider(height: 20),
-                        _statRow(
-                          l10n.get('status_paid'),
-                          '${_monthlyReport!['paidCount']}',
-                          valueColor: const Color(0xFF16A34A),
-                        ),
-                        _statRow(
-                          l10n.get('status_pending'),
-                          '${_monthlyReport!['pendingCount']}',
-                        ),
-                        _statRow(
-                          l10n.get('collection_rate'),
-                          '${(_monthlyReport!['collectionRate'] as double).toStringAsFixed(0)}%',
-                          valueColor: const Color(0xFF2563EB),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 12),
-
-                // Yearly report
-                if (_yearlyReport != null) ...<Widget>[
-                  _CardWithTitle(
-                    title: '${l10n.get('yearly_report')} - $_selectedYear',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        _statRow(
-                          l10n.get('total_collection'),
-                          '${l10n.get('currency')}${(_yearlyReport!['totalYearlyCollection'] as double).toStringAsFixed(0)}',
-                          valueColor: const Color(0xFF16A34A),
-                        ),
-                        _statRow(
-                          l10n.get('total_bills'),
-                          '${_yearlyReport!['totalBills']}',
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          l10n.get('monthly_details'),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                        if (monthlyReport.isNotEmpty) ...<Widget>[
+                          _CardWithTitle(
+                            title:
+                                '${l10n.get('monthly_report')} - ${l10n.getMonthName(_selectedMonth, isBS: isBS)} $_selectedYear',
+                            child: Column(
+                              children: <Widget>[
+                                _statRow(
+                                  l10n.get('total_bills'),
+                                  '${monthlyReport['totalBills']}',
+                                ),
+                                _statRow(
+                                  l10n.get('collected_rent'),
+                                  '${l10n.get('currency')}${(monthlyReport['totalRentCollected'] as double).toStringAsFixed(0)}',
+                                  valueColor: const Color(0xFF16A34A),
+                                ),
+                                _statRow(
+                                  l10n.get('pending_amount'),
+                                  '${l10n.get('currency')}${(monthlyReport['totalPending'] as double).toStringAsFixed(0)}',
+                                  valueColor: const Color(0xFFF59E0B),
+                                ),
+                                _statRow(
+                                  l10n.get('overdue_amount'),
+                                  '${l10n.get('currency')}${(monthlyReport['totalOverdue'] as double).toStringAsFixed(0)}',
+                                  valueColor: const Color(0xFFDC2626),
+                                ),
+                                const Divider(height: 20),
+                                _statRow(
+                                  l10n.get('status_paid'),
+                                  '${monthlyReport['paidCount']}',
+                                  valueColor: const Color(0xFF16A34A),
+                                ),
+                                _statRow(
+                                  l10n.get('status_pending'),
+                                  '${monthlyReport['pendingCount']}',
+                                ),
+                                _statRow(
+                                  l10n.get('collection_rate'),
+                                  '${(monthlyReport['collectionRate'] as double).toStringAsFixed(0)}%',
+                                  valueColor: const Color(0xFF2563EB),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        ...List<Widget>.generate(12, (int index) {
-                          final int month = index + 1;
-                          final Map<int, double> monthlyCollection =
-                              _yearlyReport!['monthlyCollection']
-                                  as Map<int, double>;
-                          final Map<int, int> monthlyBills =
-                              _yearlyReport!['monthlyBills']
-                                  as Map<int, int>;
-                          final double amount =
-                              monthlyCollection[month] ?? 0.0;
-                          final int count = monthlyBills[month] ?? 0;
-                          if (amount > 0 || count > 0) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: <Widget>[
-                                  Text(
-                                    l10n.getMonthName(month, isBS: isBS),
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF64748B),
-                                    ),
+                        ],
+                        const SizedBox(height: 12),
+                        if (yearlyReport.isNotEmpty) ...<Widget>[
+                          _CardWithTitle(
+                            title:
+                                '${l10n.get('yearly_report')} - $_selectedYear',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                _statRow(
+                                  l10n.get('total_collection'),
+                                  '${l10n.get('currency')}${(yearlyReport['totalYearlyCollection'] as double).toStringAsFixed(0)}',
+                                  valueColor: const Color(0xFF16A34A),
+                                ),
+                                _statRow(
+                                  l10n.get('total_bills'),
+                                  '${yearlyReport['totalBills']}',
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  l10n.get('monthly_details'),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                  Text(
-                                    '$count ${count == 1 ? l10n.get('bill_unit') : l10n.get('bills_unit')}',
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                  Text(
-                                    '${l10n.get('currency')}${amount.toStringAsFixed(0)}',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        }),
+                                ),
+                                const SizedBox(height: 8),
+                                ...List<Widget>.generate(12, (int index) {
+                                  final int month = index + 1;
+                                  final Map<int, double> monthlyCollection =
+                                      yearlyReport['monthlyCollection']
+                                          as Map<int, double>;
+                                  final Map<int, int> monthlyBills =
+                                      yearlyReport['monthlyBills']
+                                          as Map<int, int>;
+                                  final double amount =
+                                      monthlyCollection[month] ?? 0.0;
+                                  final int count = monthlyBills[month] ?? 0;
+                                  if (amount > 0 || count > 0) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 4,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: <Widget>[
+                                          Text(
+                                            l10n.getMonthName(
+                                              month,
+                                              isBS: isBS,
+                                            ),
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              color: Color(0xFF64748B),
+                                            ),
+                                          ),
+                                          Text(
+                                            '$count ${count == 1 ? l10n.get('bill_unit') : l10n.get('bills_unit')}',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${l10n.get('currency')}${amount.toStringAsFixed(0)}',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                }),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
-                    ),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ],
             ),
           ),

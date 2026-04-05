@@ -38,13 +38,14 @@ class TenantModelAdapter extends TypeAdapter<TenantModel> {
           : (fields[17] as num).toDouble(),
       leftDate: fields[18] as DateTime?,
       monthlyRent: fields[19] == null ? 0 : (fields[19] as num).toDouble(),
+      securityDeposit: fields[20] == null ? 0 : (fields[20] as num).toDouble(),
     );
   }
 
   @override
   void write(BinaryWriter writer, TenantModel obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(18)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -78,7 +79,9 @@ class TenantModelAdapter extends TypeAdapter<TenantModel> {
       ..writeByte(18)
       ..write(obj.leftDate)
       ..writeByte(19)
-      ..write(obj.monthlyRent);
+      ..write(obj.monthlyRent)
+      ..writeByte(20)
+      ..write(obj.securityDeposit);
   }
 
   @override
@@ -119,6 +122,7 @@ _TenantModel _$TenantModelFromJson(Map<String, dynamic> json) => _TenantModel(
       ? null
       : DateTime.parse(json['leftDate'] as String),
   monthlyRent: (json['monthlyRent'] as num?)?.toDouble() ?? 0,
+  securityDeposit: (json['securityDeposit'] as num?)?.toDouble() ?? 0,
 );
 
 Map<String, dynamic> _$TenantModelToJson(_TenantModel instance) =>
@@ -140,4 +144,5 @@ Map<String, dynamic> _$TenantModelToJson(_TenantModel instance) =>
       'initialWaterReading': instance.initialWaterReading,
       'leftDate': instance.leftDate?.toIso8601String(),
       'monthlyRent': instance.monthlyRent,
+      'securityDeposit': instance.securityDeposit,
     };

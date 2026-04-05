@@ -18,7 +18,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
   late TextEditingController _nameController;
   late TextEditingController _addressController;
   late TextEditingController _unitController;
-  late TextEditingController _depositController;
+
   late TextEditingController _ownerNameController;
   late TextEditingController _ownerPhoneController;
 
@@ -32,11 +32,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
     _unitController = TextEditingController(
       text: widget.property?.unitNumber ?? '',
     );
-    _depositController = TextEditingController(
-      text: widget.property != null && widget.property!.securityDeposit > 0
-          ? widget.property!.securityDeposit.toStringAsFixed(0)
-          : '',
-    );
+
     _ownerNameController = TextEditingController(
       text: widget.property?.ownerName ?? '',
     );
@@ -50,7 +46,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
     _nameController.dispose();
     _addressController.dispose();
     _unitController.dispose();
-    _depositController.dispose();
+
     _ownerNameController.dispose();
     _ownerPhoneController.dispose();
     super.dispose();
@@ -118,22 +114,7 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  _formCard(
-                    title: l10n.get('deposit_amount'),
-                    icon: Icons.account_balance_wallet_outlined,
-                    children: <Widget>[
-                      TextFormField(
-                        controller: _depositController,
-                        decoration: InputDecoration(
-                          labelText: l10n.get('deposit_amount'),
-                          hintText: l10n.get('deposit_hint'),
-                          prefixIcon: const Icon(Icons.savings, size: 20),
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ],
-                  ),
+
                   const SizedBox(height: 16),
                   _formCard(
                     title: l10n.get('owner_details'),
@@ -247,8 +228,6 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
             name: _nameController.text.trim(),
             address: _addressController.text.trim(),
             unitNumber: _unitController.text.trim(),
-            securityDeposit:
-                double.tryParse(_depositController.text.trim()) ?? 0,
             ownerName: _ownerNameController.text.trim(),
             ownerPhone: _ownerPhoneController.text.trim(),
           ) ??
@@ -256,8 +235,6 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
             name: _nameController.text.trim(),
             address: _addressController.text.trim(),
             unitNumber: _unitController.text.trim(),
-            securityDeposit:
-                double.tryParse(_depositController.text.trim()) ?? 0,
             ownerName: _ownerNameController.text.trim(),
             ownerPhone: _ownerPhoneController.text.trim(),
           );

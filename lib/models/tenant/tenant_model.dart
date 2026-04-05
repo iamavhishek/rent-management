@@ -28,6 +28,7 @@ abstract class TenantModel with _$TenantModel {
     @HiveField(17) @Default(0) double initialWaterReading,
     @HiveField(18) DateTime? leftDate,
     @HiveField(19) @Default(0) double monthlyRent,
+    @HiveField(20) @Default(0) double securityDeposit,
   }) = _TenantModel;
 
   factory TenantModel.create({
@@ -44,6 +45,7 @@ abstract class TenantModel with _$TenantModel {
     double initialElectricityReading = 0,
     double initialWaterReading = 0,
     double monthlyRent = 0,
+    double securityDeposit = 0,
   }) {
     final DateTime now = DateTime.now();
     return TenantModel(
@@ -64,6 +66,7 @@ abstract class TenantModel with _$TenantModel {
       initialElectricityReading: initialElectricityReading,
       initialWaterReading: initialWaterReading,
       monthlyRent: monthlyRent,
+      securityDeposit: securityDeposit,
     );
   }
 

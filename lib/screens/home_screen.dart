@@ -335,11 +335,9 @@ class DashboardScreen extends StatelessWidget {
                         separatorBuilder: (_, _) => const SizedBox(height: 8),
                         itemBuilder: (BuildContext context, int index) {
                           final BillModel bill = recentBills[index];
-                          return CenteredContent(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: BillCard(bill: bill),
-                            ),
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: BillCard(bill: bill),
                           );
                         },
                       ),

@@ -101,14 +101,23 @@ A modern, cross-platform Flutter application for property managers and landlords
 
 ## Screenshots
 
-> Note: Add your app screenshots in the following locations:
->
-> - `/assets/screenshots/home.jpg`
-> - `/assets/screenshots/properties.jpg`
-> - `/assets/screenshots/tenants.jpg`
-> - `/assets/screenshots/bill-create.jpg`
-> - `/assets/screenshots/bill-preview.jpg`
-> - `/assets/screenshots/reports.jpg`
+### Home Screen
+![Home Screen](assets/screenshots/home.jpg)
+
+### Properties
+![Properties](assets/screenshots/properties.jpg)
+
+### Tenants
+![Tenants](assets/screenshots/tenants.jpg)
+
+### Create Bill
+![Create Bill](assets/screenshots/bill-create.jpg)
+
+### Bill Preview
+![Bill Preview](assets/screenshots/bill-preview.jpg)
+
+### Reports
+![Reports](assets/screenshots/reports.jpg)
 
 ---
 

@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 enum AppLanguage { ne, en }
 
 class L10n {
-
   L10n(this.language);
   final AppLanguage language;
 
-  static L10n of(BuildContext context) => Localizations.of<L10n>(context, L10n) ?? L10n(AppLanguage.ne);
+  static L10n of(BuildContext context) =>
+      Localizations.of<L10n>(context, L10n) ?? L10n(AppLanguage.ne);
 
-  static const Map<AppLanguage, Map<String, Object>> _localizedValues = <AppLanguage, Map<String, Object>>{
+  static const Map<AppLanguage, Map<String, Object>>
+  _localizedValues = <AppLanguage, Map<String, Object>>{
     AppLanguage.ne: <String, Object>{
       'welcome_calendar': 'पात्रो छान्नुहोस्',
       'calendar_desc':
@@ -499,7 +500,6 @@ class L10n {
 }
 
 class AppLocalizationsDelegate extends LocalizationsDelegate<L10n> {
-
   const AppLocalizationsDelegate(this.language);
   final AppLanguage language;
 

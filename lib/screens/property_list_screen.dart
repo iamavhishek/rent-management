@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
 import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
-import 'package:rent_bill_maker/screens/add_edit_property_screen.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class PropertyListScreen extends StatelessWidget {
@@ -52,7 +52,8 @@ class PropertyListScreen extends StatelessWidget {
             return ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
               itemCount: state.properties.length,
-              separatorBuilder: (BuildContext context, int index) => const SizedBox(height: 10),
+              separatorBuilder: (BuildContext context, int index) =>
+                  const SizedBox(height: 10),
               itemBuilder: (BuildContext context, int index) {
                 final PropertyModel property = state.properties[index];
                 return Card(
@@ -183,14 +184,42 @@ class PropertyListScreen extends StatelessWidget {
                                     return const SizedBox.shrink();
                                   },
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${l10n.get('currency')}${property.monthlyRent.toStringAsFixed(0)} / month',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF059669),
-                                  ),
+                                BlocBuilder<TenantBloc, TenantState>(
+                                  builder: (_, TenantState tenantState) {
+                                    final List<TenantModel> activeTenants =
+                                        _activeTenantsFor(
+                                          tenantState,
+                                          property.id,
+                                        );
+                                    if (activeTenants.isNotEmpty) {
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          const SizedBox(height: 6),
+                                          Row(
+                                            children: <Widget>[
+                                              const Icon(
+                                                Icons.payments_outlined,
+                                                size: 12,
+                                                color: Color(0xFF059669),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '${l10n.get('currency')}${activeTenants.first.monthlyRent.toStringAsFixed(0)} / month',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Color(0xFF059669),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
                                 ),
                               ],
                             ),
@@ -232,23 +261,18 @@ class PropertyListScreen extends StatelessWidget {
   }
 
   Future<void> _addProperty(BuildContext context) async {
-    final bool? result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute<bool>(builder: (_) => const AddEditPropertyScreen()),
-    );
-    if (result == true && context.mounted) {
+    await context.push<void>('/properties/add');
+    if (context.mounted) {
       context.read<PropertyBloc>().add(LoadProperties());
     }
   }
 
-  Future<void> _editProperty(BuildContext context, PropertyModel property) async {
-    final bool? result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute<bool>(
-        builder: (_) => AddEditPropertyScreen(property: property),
-      ),
-    );
-    if (result == true && context.mounted) {
+  Future<void> _editProperty(
+    BuildContext context,
+    PropertyModel property,
+  ) async {
+    await context.push<void>('/properties/add', extra: property);
+    if (context.mounted) {
       context.read<PropertyBloc>().add(LoadProperties());
     }
   }

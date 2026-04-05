@@ -15,7 +15,6 @@ abstract class PropertyModel with _$PropertyModel {
     @HiveField(1) required String name,
     @HiveField(2) required String address,
     @HiveField(3) required String unitNumber,
-    @HiveField(4) required double monthlyRent,
     @HiveField(5) required double securityDeposit,
     @HiveField(6) required String ownerName,
     @HiveField(7) required String ownerPhone,
@@ -28,8 +27,9 @@ abstract class PropertyModel with _$PropertyModel {
     required String name,
     required String address,
     required String unitNumber,
-    required double monthlyRent,
-    required String ownerName, required String ownerPhone, double securityDeposit = 0,
+    required String ownerName,
+    required String ownerPhone,
+    double securityDeposit = 0,
   }) {
     final DateTime now = DateTime.now();
     return PropertyModel(
@@ -37,7 +37,6 @@ abstract class PropertyModel with _$PropertyModel {
       name: name,
       address: address,
       unitNumber: unitNumber,
-      monthlyRent: monthlyRent,
       securityDeposit: securityDeposit,
       ownerName: ownerName,
       ownerPhone: ownerPhone,

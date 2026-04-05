@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:nested/nested.dart';
+import 'package:rent_bill_maker/app/router.dart' show router;
 import 'package:rent_bill_maker/bloc/bill/bill_bloc.dart';
 import 'package:rent_bill_maker/bloc/language/language_cubit.dart';
 import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
@@ -15,8 +16,6 @@ import 'package:rent_bill_maker/repositories/bill_repository.dart';
 import 'package:rent_bill_maker/repositories/property_repository.dart';
 import 'package:rent_bill_maker/repositories/settings_repository.dart';
 import 'package:rent_bill_maker/repositories/tenant_repository.dart';
-import 'package:rent_bill_maker/screens/home_screen.dart';
-import 'package:rent_bill_maker/screens/onboarding_screen.dart';
 import 'package:rent_bill_maker/services/notification_service.dart';
 import 'package:rent_bill_maker/utils/constants.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
@@ -79,11 +78,11 @@ class RentBillMakerApp extends StatelessWidget {
                       ..add(LoadBills()),
               ),
               BlocProvider<ReportsCubit>(
-                create: (_) =>
-                    ReportsCubit(billRepository: BillRepository()),
+                create: (_) => ReportsCubit(billRepository: BillRepository()),
               ),
             ],
-            child: MaterialApp(
+            child: MaterialApp.router(
+              routerConfig: router,
               title: l10n.get('app_name'),
               theme: AppTheme.lightTheme,
               debugShowCheckedModeBanner: false,
@@ -93,19 +92,10 @@ class RentBillMakerApp extends StatelessWidget {
               localizationsDelegates: <LocalizationsDelegate<dynamic>>[
                 AppLocalizationsDelegate(language),
               ],
-              home: _getHome(settingsRepo),
             ),
           );
         },
       ),
     );
-  }
-
-  Widget _getHome(SettingsRepository settingsRepo) {
-    final bool onboardingCompleted = settingsRepo.isOnboardingComplete();
-    if (!onboardingCompleted) {
-      return const OnboardingScreen();
-    }
-    return const HomeScreen();
   }
 }

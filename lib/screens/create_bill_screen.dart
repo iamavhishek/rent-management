@@ -415,8 +415,9 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
                                         (TenantModel t) => t.id == value,
                                       );
 
-                                  final BillState billState =
-                                      context.read<BillBloc>().state;
+                                  final BillState billState = context
+                                      .read<BillBloc>()
+                                      .state;
                                   final List<BillModel> lastBill = <BillModel>[
                                     if (billState is BillLoaded)
                                       ...billState.bills.where(

@@ -28,7 +28,6 @@ enum DateSystem {
 @freezed
 @HiveType(typeId: 2)
 abstract class BillModel with _$BillModel {
-
   factory BillModel.fromJson(Map<String, dynamic> json) =>
       _$BillModelFromJson(json);
   const BillModel._();
@@ -51,12 +50,18 @@ abstract class BillModel with _$BillModel {
     @HiveField(18) required double paidAmount,
     @HiveField(19) required DateTime dueDate,
     @HiveField(20) required PaymentStatus status,
-    @HiveField(26) required DateTime createdAt, @HiveField(27) required DateTime updatedAt, @HiveField(21) DateTime? paidDate,
+    @HiveField(26) required DateTime createdAt,
+    @HiveField(27) required DateTime updatedAt,
+    @HiveField(21) DateTime? paidDate,
     @HiveField(22) String? paymentMode,
     @HiveField(24) String? notes,
     @HiveField(25) String? pdfPath,
-    @HiveField(28) @Default(<dynamic, dynamic>{}) Map<String, double> dynamicCharges,
-    @HiveField(29) @Default(<dynamic, dynamic>{}) Map<String, double> dynamicDeductions,
+    @HiveField(28)
+    @Default(<String, double>{})
+    Map<String, double> dynamicCharges,
+    @HiveField(29)
+    @Default(<String, double>{})
+    Map<String, double> dynamicDeductions,
     @HiveField(31) double? electricityUnits,
     @HiveField(32) double? waterUnits,
     @HiveField(33) double? previousElectricityReading,
@@ -71,7 +76,8 @@ abstract class BillModel with _$BillModel {
     required int month,
     required int year,
     required double rentAmount,
-    required DateTime dueDate, double electricityCharges = 0,
+    required DateTime dueDate,
+    double electricityCharges = 0,
     double waterCharges = 0,
     double internetCharges = 0,
     double otherCharges = 0,

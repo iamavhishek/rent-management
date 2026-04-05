@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rent_bill_maker/bloc/language/language_cubit.dart';
 import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
 import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
@@ -7,7 +8,6 @@ import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
-import 'package:rent_bill_maker/screens/home_screen.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -57,61 +57,58 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _completeOnboarding() {
     context.read<SettingsCubit>().setOnboardingComplete();
-    Navigator.of(context).pushAndRemoveUntil(
-      PageRouteBuilder<void>(
-        pageBuilder: (_, _, _) => const HomeScreen(),
-        transitionsBuilder: (_, Animation<double> animation, _, Widget child) => FadeTransition(opacity: animation, child: child),
-        transitionDuration: const Duration(milliseconds: 600),
-      ),
-      (Route<dynamic> route) => false,
-    );
+    context.go('/home');
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[Color(0xFFF8FAFC), Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: <Widget>[
-              const SizedBox(height: 20),
-              // Step indicator
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: _StepIndicator(currentStep: _currentPage, totalSteps: 4),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    onPageChanged: (int page) =>
-                        setState(() => _currentPage = page),
-                    children: <Widget>[
-                      _LanguageStep(onNext: _nextPage),
-                      _CalendarStep(onNext: _nextPage),
-                      _PropertyStep(onNext: _nextPage, onSkip: _nextPage),
-                      _TenantStep(
-                        onNext: _completeOnboarding,
-                        onSkip: _completeOnboarding,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+    body: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            Color(0xFFF8FAFC),
+            Color(0xFFEFF6FF),
+            Color(0xFFDBEAFE),
+          ],
         ),
       ),
-    );
+      child: SafeArea(
+        child: Column(
+          children: <Widget>[
+            const SizedBox(height: 20),
+            // Step indicator
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: _StepIndicator(currentStep: _currentPage, totalSteps: 4),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  onPageChanged: (int page) =>
+                      setState(() => _currentPage = page),
+                  children: <Widget>[
+                    _LanguageStep(onNext: _nextPage),
+                    _CalendarStep(onNext: _nextPage),
+                    _PropertyStep(onNext: _nextPage, onSkip: _nextPage),
+                    _TenantStep(
+                      onNext: _completeOnboarding,
+                      onSkip: _completeOnboarding,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -124,25 +121,25 @@ class _StepIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-      children: List<Widget>.generate(totalSteps, (int index) {
-        final bool isActive = index <= currentStep;
-        final bool isCurrent = index == currentStep;
-        return Expanded(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeOut,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            height: isCurrent ? 6 : 4,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: isActive
-                  ? const Color(0xFF2563EB)
-                  : const Color(0xFF2563EB).withValues(alpha: 0.15),
-            ),
+    children: List<Widget>.generate(totalSteps, (int index) {
+      final bool isActive = index <= currentStep;
+      final bool isCurrent = index == currentStep;
+      return Expanded(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOut,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          height: isCurrent ? 6 : 4,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: isActive
+                ? const Color(0xFF2563EB)
+                : const Color(0xFF2563EB).withValues(alpha: 0.15),
           ),
-        );
-      }),
-    );
+        ),
+      );
+    }),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -334,14 +331,12 @@ class _PropertyStepState extends State<_PropertyStep> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _unitController = TextEditingController();
-  final TextEditingController _rentController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
     _addressController.dispose();
     _unitController.dispose();
-    _rentController.dispose();
     super.dispose();
   }
 
@@ -427,17 +422,6 @@ class _PropertyStepState extends State<_PropertyStep> {
                           hint: l10n.get('room_number_hint'),
                           icon: Icons.door_front_door_rounded,
                         ),
-                        const SizedBox(height: 16),
-                        _OnboardingField(
-                          controller: _rentController,
-                          label: l10n.get('monthly_rent'),
-                          hint: l10n.get('rent_hint'),
-                          icon: Icons.payments_rounded,
-                          keyboardType: TextInputType.number,
-                          validator: (String? v) => v == null || v.isEmpty
-                              ? l10n.get('required')
-                              : null,
-                        ),
                       ],
                     ),
                   ),
@@ -465,7 +449,6 @@ class _PropertyStepState extends State<_PropertyStep> {
                         name: _nameController.text.trim(),
                         address: _addressController.text.trim(),
                         unitNumber: _unitController.text.trim(),
-                        monthlyRent: double.parse(_rentController.text.trim()),
                         ownerName: '',
                         ownerPhone: '',
                       );
@@ -659,10 +642,13 @@ class _TenantStepState extends State<_TenantStep> {
                   icon: Icons.rocket_launch_rounded,
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      final PropertyState propertyState = context.read<PropertyBloc>().state;
+                      final PropertyState propertyState = context
+                          .read<PropertyBloc>()
+                          .state;
                       if (propertyState is PropertyLoaded &&
                           propertyState.properties.isNotEmpty) {
-                        final PropertyModel property = propertyState.properties.first;
+                        final PropertyModel property =
+                            propertyState.properties.first;
                         final TenantModel tenant = TenantModel.create(
                           name: _nameController.text.trim(),
                           phone: _phoneController.text.trim(),
@@ -692,7 +678,6 @@ class _TenantStepState extends State<_TenantStep> {
 
 /// Animated illustrated circle with icon
 class _IllustrationBubble extends StatelessWidget {
-
   const _IllustrationBubble({
     required this.icon,
     required this.color,
@@ -704,45 +689,44 @@ class _IllustrationBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: <Color>[
-              color.withValues(alpha: 0.15),
-              color.withValues(alpha: 0.06),
-            ],
-          ),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: color.withValues(alpha: 0.12),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
+    child: Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.06),
           ],
         ),
-        child: Center(
-          child: Container(
-            width: size * 0.65,
-            height: size * 0.65,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.12),
-            ),
-            child: Icon(icon, size: size * 0.35, color: color),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: color.withValues(alpha: 0.12),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
           ),
+        ],
+      ),
+      child: Center(
+        child: Container(
+          width: size * 0.65,
+          height: size * 0.65,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withValues(alpha: 0.12),
+          ),
+          child: Icon(icon, size: size * 0.35, color: color),
         ),
       ),
-    );
+    ),
+  );
 }
 
 /// Language selection tile
 class _LanguageTile extends StatelessWidget {
-
   const _LanguageTile({
     required this.flag,
     required this.title,
@@ -758,99 +742,92 @@ class _LanguageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.white
-              : Colors.white.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF2563EB)
-                : const Color(0xFFE2E8F0),
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? <BoxShadow>[
-                  BoxShadow(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : <BoxShadow>[],
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+          width: isSelected ? 2 : 1,
         ),
-        child: Row(
-          children: <Widget>[
-            Text(flag, style: const TextStyle(fontSize: 28)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: const Color(0xFF0F172A),
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF94A3B8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: isSelected
-                  ? Container(
-                      key: const ValueKey<String>('check'),
-                      width: 28,
-                      height: 28,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(0xFF2563EB),
-                      ),
-                      child: const Icon(
-                        Icons.check_rounded,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Container(
-                      key: const ValueKey<String>('uncheck'),
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFFE2E8F0),
-                          width: 2,
-                        ),
-                      ),
-                    ),
-            ),
-          ],
-        ),
+        boxShadow: isSelected
+            ? <BoxShadow>[
+                BoxShadow(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : <BoxShadow>[],
       ),
-    );
+      child: Row(
+        children: <Widget>[
+          Text(flag, style: const TextStyle(fontSize: 28)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF94A3B8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: isSelected
+                ? Container(
+                    key: const ValueKey<String>('check'),
+                    width: 28,
+                    height: 28,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF2563EB),
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  )
+                : Container(
+                    key: const ValueKey<String>('uncheck'),
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFE2E8F0),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Styled text field for onboarding forms
 class _OnboardingField extends StatelessWidget {
-
   const _OnboardingField({
     required this.controller,
     required this.label,
@@ -868,20 +845,19 @@ class _OnboardingField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon, size: 20),
-      ),
-    );
+    controller: controller,
+    keyboardType: keyboardType,
+    validator: validator,
+    decoration: InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(icon, size: 20),
+    ),
+  );
 }
 
 /// Primary gradient-ish button
 class _PrimaryButton extends StatelessWidget {
-
   const _PrimaryButton({
     required this.label,
     required this.onPressed,
@@ -893,62 +869,61 @@ class _PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF2563EB),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          shadowColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
+    width: double.infinity,
+    height: 54,
+    child: ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF2563EB),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
-              ),
-            ),
-            if (icon != null) ...<Widget>[
-              const SizedBox(width: 8),
-              Icon(icon, size: 20),
-            ],
-          ],
-        ),
+        shadowColor: const Color(0xFF2563EB).withValues(alpha: 0.3),
       ),
-    );
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+          if (icon != null) ...<Widget>[
+            const SizedBox(width: 8),
+            Icon(icon, size: 20),
+          ],
+        ],
+      ),
+    ),
+  );
 }
 
 /// Ghost / skip button
 class _GhostButton extends StatelessWidget {
-
   const _GhostButton({required this.label, required this.onPressed});
   final String label;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) => SizedBox(
-      height: 54,
-      child: TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          foregroundColor: const Color(0xFF64748B),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+    height: 54,
+    child: TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: const Color(0xFF64748B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
         ),
       ),
-    );
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+      ),
+    ),
+  );
 }

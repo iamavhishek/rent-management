@@ -9,7 +9,6 @@ import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class BillReceiptWidget extends StatelessWidget {
-
   const BillReceiptWidget({
     required this.bill,
     required this.property,
@@ -224,12 +223,14 @@ class BillReceiptWidget extends StatelessWidget {
                     : l10n.get('other'),
                 '${l10n.get('currency')}${bill.otherCharges.toStringAsFixed(0)}',
               ),
-            for (final MapEntry<String, double> entry in bill.dynamicCharges.entries)
+            for (final MapEntry<String, double> entry
+                in bill.dynamicCharges.entries)
               _chargeRow(
                 entry.key,
                 '${l10n.get('currency')}${entry.value.toStringAsFixed(0)}',
               ),
-            for (final MapEntry<String, double> entry in bill.dynamicDeductions.entries)
+            for (final MapEntry<String, double> entry
+                in bill.dynamicDeductions.entries)
               _chargeRow(
                 entry.key,
                 '-${l10n.get('currency')}${entry.value.toStringAsFixed(0)}',
@@ -337,26 +338,26 @@ class BillReceiptWidget extends StatelessWidget {
   }
 
   Widget _chargeRow(String label, String amount) => Container(
-      padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFF0F0F0), width: 0.5),
-        ),
+    padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
+    decoration: const BoxDecoration(
+      border: Border(
+        bottom: BorderSide(color: Color(0xFFF0F0F0), width: 0.5),
       ),
-      child: Row(
-        children: <Widget>[
-          Expanded(child: Text(label, style: const TextStyle(fontSize: 12))),
-          Text(
-            amount,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Poppins',
-            ),
+    ),
+    child: Row(
+      children: <Widget>[
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 12))),
+        Text(
+          amount,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Poppins',
           ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
 
   Widget _statusBadge(PaymentStatus status, L10n l10n) {
     Color color;

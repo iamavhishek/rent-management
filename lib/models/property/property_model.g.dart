@@ -21,7 +21,6 @@ class PropertyModelAdapter extends TypeAdapter<PropertyModel> {
       name: fields[1] as String,
       address: fields[2] as String,
       unitNumber: fields[3] as String,
-      monthlyRent: (fields[4] as num).toDouble(),
       securityDeposit: (fields[5] as num).toDouble(),
       ownerName: fields[6] as String,
       ownerPhone: fields[7] as String,
@@ -34,7 +33,7 @@ class PropertyModelAdapter extends TypeAdapter<PropertyModel> {
   @override
   void write(BinaryWriter writer, PropertyModel obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -43,8 +42,6 @@ class PropertyModelAdapter extends TypeAdapter<PropertyModel> {
       ..write(obj.address)
       ..writeByte(3)
       ..write(obj.unitNumber)
-      ..writeByte(4)
-      ..write(obj.monthlyRent)
       ..writeByte(5)
       ..write(obj.securityDeposit)
       ..writeByte(6)
@@ -80,7 +77,6 @@ _PropertyModel _$PropertyModelFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       address: json['address'] as String,
       unitNumber: json['unitNumber'] as String,
-      monthlyRent: (json['monthlyRent'] as num).toDouble(),
       securityDeposit: (json['securityDeposit'] as num).toDouble(),
       ownerName: json['ownerName'] as String,
       ownerPhone: json['ownerPhone'] as String,
@@ -95,7 +91,6 @@ Map<String, dynamic> _$PropertyModelToJson(_PropertyModel instance) =>
       'name': instance.name,
       'address': instance.address,
       'unitNumber': instance.unitNumber,
-      'monthlyRent': instance.monthlyRent,
       'securityDeposit': instance.securityDeposit,
       'ownerName': instance.ownerName,
       'ownerPhone': instance.ownerPhone,

@@ -22,12 +22,12 @@ class TenantModelAdapter extends TypeAdapter<TenantModel> {
       phone: fields[2] as String,
       propertyId: fields[4] as String,
       moveInDate: fields[5] as DateTime,
-      leaseEndDate: fields[6] as DateTime?,
       citizenshipNumber: fields[9] as String,
-      citizenshipImagePath: fields[10] as String?,
       createdAt: fields[11] as DateTime,
       updatedAt: fields[12] as DateTime,
       isActive: fields[13] as bool,
+      leaseEndDate: fields[6] as DateTime?,
+      citizenshipImagePath: fields[10] as String?,
       electricityRate: fields[14] == null ? 0 : (fields[14] as num).toDouble(),
       waterRate: fields[15] == null ? 0 : (fields[15] as num).toDouble(),
       initialElectricityReading: fields[16] == null
@@ -102,14 +102,14 @@ _TenantModel _$TenantModelFromJson(Map<String, dynamic> json) => _TenantModel(
   phone: json['phone'] as String,
   propertyId: json['propertyId'] as String,
   moveInDate: DateTime.parse(json['moveInDate'] as String),
-  leaseEndDate: json['leaseEndDate'] == null
-      ? null
-      : DateTime.parse(json['leaseEndDate'] as String),
   citizenshipNumber: json['citizenshipNumber'] as String,
-  citizenshipImagePath: json['citizenshipImagePath'] as String?,
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
   isActive: json['isActive'] as bool,
+  leaseEndDate: json['leaseEndDate'] == null
+      ? null
+      : DateTime.parse(json['leaseEndDate'] as String),
+  citizenshipImagePath: json['citizenshipImagePath'] as String?,
   electricityRate: (json['electricityRate'] as num?)?.toDouble() ?? 0,
   waterRate: (json['waterRate'] as num?)?.toDouble() ?? 0,
   initialElectricityReading:
@@ -128,12 +128,12 @@ Map<String, dynamic> _$TenantModelToJson(_TenantModel instance) =>
       'phone': instance.phone,
       'propertyId': instance.propertyId,
       'moveInDate': instance.moveInDate.toIso8601String(),
-      'leaseEndDate': instance.leaseEndDate?.toIso8601String(),
       'citizenshipNumber': instance.citizenshipNumber,
-      'citizenshipImagePath': instance.citizenshipImagePath,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'isActive': instance.isActive,
+      'leaseEndDate': instance.leaseEndDate?.toIso8601String(),
+      'citizenshipImagePath': instance.citizenshipImagePath,
       'electricityRate': instance.electricityRate,
       'waterRate': instance.waterRate,
       'initialElectricityReading': instance.initialElectricityReading,

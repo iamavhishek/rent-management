@@ -34,12 +34,12 @@ class BillModelAdapter extends TypeAdapter<BillModel> {
       paidAmount: (fields[18] as num).toDouble(),
       dueDate: fields[19] as DateTime,
       status: fields[20] as PaymentStatus,
+      createdAt: fields[26] as DateTime,
+      updatedAt: fields[27] as DateTime,
       paidDate: fields[21] as DateTime?,
       paymentMode: fields[22] as String?,
       notes: fields[24] as String?,
       pdfPath: fields[25] as String?,
-      createdAt: fields[26] as DateTime,
-      updatedAt: fields[27] as DateTime,
       dynamicCharges: fields[28] == null
           ? {}
           : (fields[28] as Map).cast<String, double>(),
@@ -238,24 +238,24 @@ _BillModel _$BillModelFromJson(Map<String, dynamic> json) => _BillModel(
   paidAmount: (json['paidAmount'] as num).toDouble(),
   dueDate: DateTime.parse(json['dueDate'] as String),
   status: $enumDecode(_$PaymentStatusEnumMap, json['status']),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
   paidDate: json['paidDate'] == null
       ? null
       : DateTime.parse(json['paidDate'] as String),
   paymentMode: json['paymentMode'] as String?,
   notes: json['notes'] as String?,
   pdfPath: json['pdfPath'] as String?,
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  updatedAt: DateTime.parse(json['updatedAt'] as String),
   dynamicCharges:
       (json['dynamicCharges'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, (e as num).toDouble()),
       ) ??
-      const {},
+      const <String, double>{},
   dynamicDeductions:
       (json['dynamicDeductions'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, (e as num).toDouble()),
       ) ??
-      const {},
+      const <String, double>{},
   electricityUnits: (json['electricityUnits'] as num?)?.toDouble(),
   waterUnits: (json['waterUnits'] as num?)?.toDouble(),
   previousElectricityReading: (json['previousElectricityReading'] as num?)
@@ -285,12 +285,12 @@ Map<String, dynamic> _$BillModelToJson(_BillModel instance) =>
       'paidAmount': instance.paidAmount,
       'dueDate': instance.dueDate.toIso8601String(),
       'status': _$PaymentStatusEnumMap[instance.status]!,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
       'paidDate': instance.paidDate?.toIso8601String(),
       'paymentMode': instance.paymentMode,
       'notes': instance.notes,
       'pdfPath': instance.pdfPath,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'updatedAt': instance.updatedAt.toIso8601String(),
       'dynamicCharges': instance.dynamicCharges,
       'dynamicDeductions': instance.dynamicDeductions,
       'electricityUnits': instance.electricityUnits,

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_bill_maker/bloc/bill/bill_bloc.dart';
 import 'package:rent_bill_maker/bloc/property/property_bloc.dart';
 import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
-import 'package:rent_bill_maker/screens/create_bill_screen.dart';
 import 'package:rent_bill_maker/screens/history_screen.dart';
 import 'package:rent_bill_maker/screens/reports_screen.dart';
 import 'package:rent_bill_maker/screens/settings_screen.dart';
@@ -38,12 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: <int>[0, 1].contains(_currentIndex)
           ? FloatingActionButton(
               onPressed: () {
-                Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute<bool>(
-                    builder: (BuildContext context) => const CreateBillScreen(),
-                  ),
-                );
+                context.push('/bill/create');
               },
               child: const Icon(Icons.add),
             )
@@ -132,8 +127,12 @@ class DashboardScreen extends StatelessWidget {
                     double pendingAmt = 0;
                     double overdueAmt = 0;
 
-                    final PropertyState propState = context.watch<PropertyBloc>().state;
-                    final TenantState tenantState = context.watch<TenantBloc>().state;
+                    final PropertyState propState = context
+                        .watch<PropertyBloc>()
+                        .state;
+                    final TenantState tenantState = context
+                        .watch<TenantBloc>()
+                        .state;
 
                     if (propState is PropertyLoaded) {
                       propCount = propState.properties.length;
@@ -263,7 +262,9 @@ class DashboardScreen extends StatelessWidget {
                     );
                   }
 
-                  final List<BillModel> recentBills = state.bills.take(5).toList();
+                  final List<BillModel> recentBills = state.bills
+                      .take(5)
+                      .toList();
                   return SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList.separated(
@@ -319,7 +320,6 @@ class DashboardScreen extends StatelessWidget {
 }
 
 class _StatTile extends StatelessWidget {
-
   const _StatTile({
     required this.icon,
     required this.label,
@@ -335,54 +335,54 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Color(iconBg)),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Color(iconBg)),
+      boxShadow: <BoxShadow>[
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.03),
+          offset: const Offset(0, 2),
+          blurRadius: 8,
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: Color(iconBg),
+            borderRadius: BorderRadius.circular(10),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Color(iconBg),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: color,
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: Color(0xFF64748B),
+            fontWeight: FontWeight.w500,
           ),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF64748B),
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ),
+  );
 }

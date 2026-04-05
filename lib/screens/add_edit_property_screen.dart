@@ -17,7 +17,6 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
   late TextEditingController _nameController;
   late TextEditingController _addressController;
   late TextEditingController _unitController;
-  late TextEditingController _rentController;
   late TextEditingController _depositController;
   late TextEditingController _ownerNameController;
   late TextEditingController _ownerPhoneController;
@@ -31,9 +30,6 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
     );
     _unitController = TextEditingController(
       text: widget.property?.unitNumber ?? '',
-    );
-    _rentController = TextEditingController(
-      text: widget.property?.monthlyRent.toStringAsFixed(0) ?? '',
     );
     _depositController = TextEditingController(
       text: widget.property != null && widget.property!.securityDeposit > 0
@@ -53,7 +49,6 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
     _nameController.dispose();
     _addressController.dispose();
     _unitController.dispose();
-    _rentController.dispose();
     _depositController.dispose();
     _ownerNameController.dispose();
     _ownerPhoneController.dispose();
@@ -123,43 +118,17 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
                   ),
                   const SizedBox(height: 16),
                   _formCard(
-                    title:
-                        '${l10n.get('monthly_rent')} & ${l10n.get('deposit_amount')}',
+                    title: l10n.get('deposit_amount'),
                     icon: Icons.account_balance_wallet_outlined,
                     children: <Widget>[
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Expanded(
-                            child: TextFormField(
-                              controller: _rentController,
-                              decoration: InputDecoration(
-                                labelText: l10n.get('monthly_rent'),
-                                hintText: l10n.get('rent_hint'),
-                                prefixIcon: const Icon(
-                                  Icons.payments,
-                                  size: 20,
-                                ),
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (String? v) => v == null || v.isEmpty
-                                  ? l10n.get('required')
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _depositController,
-                              decoration: InputDecoration(
-                                labelText: l10n.get('deposit_amount'),
-                                hintText: l10n.get('deposit_hint'),
-                                prefixIcon: const Icon(Icons.savings, size: 20),
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                        ],
+                      TextFormField(
+                        controller: _depositController,
+                        decoration: InputDecoration(
+                          labelText: l10n.get('deposit_amount'),
+                          hintText: l10n.get('deposit_hint'),
+                          prefixIcon: const Icon(Icons.savings, size: 20),
+                        ),
+                        keyboardType: TextInputType.number,
                       ),
                     ],
                   ),
@@ -242,30 +211,30 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
     required IconData icon,
     required List<Widget> children,
   }) => Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(icon, size: 18, color: const Color(0xFF2563EB)),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(icon, size: 18, color: const Color(0xFF2563EB)),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            ...children,
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
       ),
-    );
+    ),
+  );
 
   void _saveProperty() {
     final L10n l10n = L10n.of(context);
@@ -275,7 +244,6 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
             name: _nameController.text.trim(),
             address: _addressController.text.trim(),
             unitNumber: _unitController.text.trim(),
-            monthlyRent: double.parse(_rentController.text.trim()),
             securityDeposit:
                 double.tryParse(_depositController.text.trim()) ?? 0,
             ownerName: _ownerNameController.text.trim(),
@@ -285,7 +253,6 @@ class _AddEditPropertyScreenState extends State<AddEditPropertyScreen> {
             name: _nameController.text.trim(),
             address: _addressController.text.trim(),
             unitNumber: _unitController.text.trim(),
-            monthlyRent: double.parse(_rentController.text.trim()),
             securityDeposit:
                 double.tryParse(_depositController.text.trim()) ?? 0,
             ownerName: _ownerNameController.text.trim(),

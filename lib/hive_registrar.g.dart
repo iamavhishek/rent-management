@@ -2,7 +2,7 @@
 // Do not modify
 // Check in to version control
 
-import 'package:hive_ce_flutter/hive_ce_flutter.dart';
+import 'package:hive_ce/hive_ce.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';

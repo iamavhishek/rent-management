@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:nepali_utils/nepali_utils.dart';
 import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
-import 'package:rent_bill_maker/models/bill/bill_model.dart';
+import 'package:rent_bill_maker/models/bill/bill_model.dart' show DateSystem;
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
-import 'package:rent_bill_maker/screens/add_edit_tenant_screen.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 
 class TenantListScreen extends StatelessWidget {
@@ -55,7 +55,8 @@ class TenantListScreen extends StatelessWidget {
             return ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
               itemCount: state.tenants.length,
-              separatorBuilder: (BuildContext context, int index) => const SizedBox(height: 10),
+              separatorBuilder: (BuildContext context, int index) =>
+                  const SizedBox(height: 10),
               itemBuilder: (BuildContext context, int index) {
                 final TenantModel tenant = state.tenants[index];
                 return Card(
@@ -206,23 +207,15 @@ class TenantListScreen extends StatelessWidget {
   }
 
   Future<void> _addTenant(BuildContext context) async {
-    final bool? result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute<bool>(builder: (_) => const AddEditTenantScreen()),
-    );
-    if (result == true && context.mounted) {
+    await context.push<void>('/tenants/add');
+    if (context.mounted) {
       context.read<TenantBloc>().add(LoadTenants());
     }
   }
 
   Future<void> _editTenant(BuildContext context, TenantModel tenant) async {
-    final bool? result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute<bool>(
-        builder: (_) => AddEditTenantScreen(tenant: tenant),
-      ),
-    );
-    if (result == true && context.mounted) {
+    await context.push<void>('/tenants/add', extra: tenant);
+    if (context.mounted) {
       context.read<TenantBloc>().add(LoadTenants());
     }
   }

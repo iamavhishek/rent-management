@@ -178,9 +178,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   }
 
                   // Sort all bills by their creation date for a unified timeline
-                  bills.sort((BillModel a, BillModel b) => b.createdAt.compareTo(a.createdAt));
+                  bills.sort(
+                    (BillModel a, BillModel b) =>
+                        b.createdAt.compareTo(a.createdAt),
+                  );
 
-                  final Map<String, List<BillModel>> groupedBills = <String, List<BillModel>>{};
+                  final Map<String, List<BillModel>> groupedBills =
+                      <String, List<BillModel>>{};
                   final List<String> groupOrder = <String>[];
 
                   for (BillModel bill in bills) {
@@ -218,7 +222,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       final List<String> keyParts = groupKey.split('-');
                       final int year = int.parse(keyParts[0]);
                       final int month = int.parse(keyParts[1]);
-                      final List<BillModel> billsInGroup = groupedBills[groupKey]!;
+                      final List<BillModel> billsInGroup =
+                          groupedBills[groupKey]!;
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,13 +247,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               ],
                             ),
                           ),
-                          ...billsInGroup.map((BillModel bill) => Padding(
+                          ...billsInGroup.map(
+                            (BillModel bill) => Padding(
                               padding: const EdgeInsets.only(bottom: 10),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
                                 child: BillCard(bill: bill),
                               ),
-                            )),
+                            ),
+                          ),
                         ],
                       );
                     },

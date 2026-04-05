@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rent_bill_maker/bloc/language/language_cubit.dart';
 import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
-import 'package:rent_bill_maker/screens/property_list_screen.dart';
-import 'package:rent_bill_maker/screens/tenant_list_screen.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
 import 'package:rent_bill_maker/utils/theme.dart';
 
@@ -66,24 +65,14 @@ class SettingsScreen extends StatelessWidget {
                 _SettingsTile(
                   icon: Icons.people_alt_rounded,
                   title: l10n.get('tenants'),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) => const TenantListScreen(),
-                    ),
-                  ),
+                  onTap: () => context.push('/tenants'),
                   iconColor: AppTheme.accent,
                   showDivider: true,
                 ),
                 _SettingsTile(
                   icon: Icons.home_work_rounded,
                   title: l10n.get('properties'),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) => const PropertyListScreen(),
-                    ),
-                  ),
+                  onTap: () => context.push('/properties'),
                   iconColor: AppTheme.warning,
                 ),
               ],

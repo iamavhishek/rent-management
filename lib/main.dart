@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:nested/nested.dart';
 import 'package:rent_bill_maker/app/router.dart' show router;
@@ -23,7 +24,7 @@ import 'package:rent_bill_maker/utils/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  usePathUrlStrategy();
   await Hive.initFlutter();
 
   Hive.registerAdapter(PropertyModelAdapter());

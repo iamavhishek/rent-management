@@ -6,6 +6,7 @@ import 'package:rent_bill_maker/bloc/tenant/tenant_bloc.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
+import 'package:rent_bill_maker/utils/responsive.dart';
 
 class PropertyListScreen extends StatelessWidget {
   const PropertyListScreen({super.key});
@@ -49,7 +50,8 @@ class PropertyListScreen extends StatelessWidget {
                 ),
               );
             }
-            return ListView.separated(
+            return CenteredContent(
+              child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
               itemCount: state.properties.length,
               separatorBuilder: (BuildContext context, int index) =>
@@ -241,9 +243,10 @@ class PropertyListScreen extends StatelessWidget {
                   ),
                 );
               },
-            );
-          }
-          return const Center(child: CircularProgressIndicator());
+            ),
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
         },
       ),
       floatingActionButton: BlocBuilder<PropertyBloc, PropertyState>(

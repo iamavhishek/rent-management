@@ -14,6 +14,7 @@ import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
+import 'package:rent_bill_maker/utils/responsive.dart';
 
 class AddEditTenantScreen extends StatefulWidget {
   const AddEditTenantScreen({super.key, this.tenant});
@@ -142,10 +143,11 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: Column(
-          children: <Widget>[
-            Expanded(
-              child: ListView(
+        child: CenteredContent(
+          child: Column(
+            children: <Widget>[
+              Expanded(
+                child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: <Widget>[
                   _formCard(
@@ -601,6 +603,7 @@ class _AddEditTenantScreenState extends State<AddEditTenantScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

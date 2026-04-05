@@ -11,6 +11,7 @@ import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
+import 'package:rent_bill_maker/utils/responsive.dart';
 
 class DynamicField {
   DynamicField(this.name, this.amount);
@@ -358,12 +359,13 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
             },
           ),
         ],
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: <Widget>[
-              Expanded(
-                child: ListView(
+        child: CenteredContent(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: <Widget>[
+                Expanded(
+                  child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   children: <Widget>[
                     // Tenant Selection
@@ -770,6 +772,7 @@ class _CreateBillScreenState extends State<CreateBillScreen> {
                   ),
                 ),
             ],
+          ),
           ),
         ),
       ),

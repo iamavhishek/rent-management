@@ -10,6 +10,7 @@ import 'package:rent_bill_maker/screens/history_screen.dart';
 import 'package:rent_bill_maker/screens/reports_screen.dart';
 import 'package:rent_bill_maker/screens/settings_screen.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
+import 'package:rent_bill_maker/utils/responsive.dart';
 import 'package:rent_bill_maker/utils/theme.dart';
 import 'package:rent_bill_maker/widgets/bill_card.dart';
 
@@ -34,47 +35,105 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: screens),
-      floatingActionButton: <int>[0, 1].contains(_currentIndex)
-          ? FloatingActionButton(
-              onPressed: () {
-                context.push('/bill/create');
-              },
-              child: const Icon(Icons.add),
-            )
-          : null,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (int index) {
-          if (_currentIndex == index && context.mounted && _currentIndex == 0) {
-            // Refresh dashboard on re-tap
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool useRail =
+              constraints.maxWidth >= ResponsiveBreakpoints.navRail;
+
+          if (useRail) {
+            return Row(
+              children: <Widget>[
+                NavigationRail(
+                  selectedIndex: _currentIndex,
+                  onDestinationSelected: (int index) =>
+                      setState(() => _currentIndex = index),
+                  labelType: NavigationRailLabelType.all,
+                  destinations: <NavigationRailDestination>[
+                    NavigationRailDestination(
+                      icon: const Icon(Icons.dashboard_outlined, size: 24),
+                      selectedIcon: const Icon(Icons.dashboard, size: 24),
+                      label: Text(l10n.get('dashboard')),
+                    ),
+                    NavigationRailDestination(
+                      icon: const Icon(Icons.receipt_long_outlined, size: 24),
+                      selectedIcon: const Icon(Icons.receipt_long, size: 24),
+                      label: Text(l10n.get('bills')),
+                    ),
+                    NavigationRailDestination(
+                      icon: const Icon(Icons.analytics_outlined, size: 24),
+                      selectedIcon: const Icon(Icons.analytics, size: 24),
+                      label: Text(l10n.get('reports')),
+                    ),
+                    NavigationRailDestination(
+                      icon: const Icon(Icons.settings_outlined, size: 24),
+                      selectedIcon: const Icon(Icons.settings, size: 24),
+                      label: Text(l10n.get('settings')),
+                    ),
+                  ],
+                ),
+                const VerticalDivider(thickness: 1, width: 1),
+                Expanded(
+                  child: IndexedStack(index: _currentIndex, children: screens),
+                ),
+              ],
+            );
           }
-          setState(() => _currentIndex = index);
+
+          return IndexedStack(index: _currentIndex, children: screens);
         },
-        height: 68,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: <Widget>[
-          NavigationDestination(
-            icon: const Icon(Icons.dashboard_outlined, size: 24),
-            selectedIcon: const Icon(Icons.dashboard, size: 24),
-            label: l10n.get('dashboard'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.receipt_long_outlined, size: 24),
-            selectedIcon: const Icon(Icons.receipt_long, size: 24),
-            label: l10n.get('bills'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.analytics_outlined, size: 24),
-            selectedIcon: const Icon(Icons.analytics, size: 24),
-            label: l10n.get('reports'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.settings_outlined, size: 24),
-            selectedIcon: const Icon(Icons.settings, size: 24),
-            label: l10n.get('settings'),
-          ),
-        ],
+      ),
+      floatingActionButton: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          if (!<int>[0, 1].contains(_currentIndex)) {
+            return const SizedBox.shrink();
+          }
+          return FloatingActionButton(
+            onPressed: () {
+              context.push('/bill/create');
+            },
+            child: const Icon(Icons.add),
+          );
+        },
+      ),
+      bottomNavigationBar: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          if (constraints.maxWidth >= ResponsiveBreakpoints.navRail) {
+            return const SizedBox.shrink();
+          }
+          return NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: (int index) {
+              if (_currentIndex == index && context.mounted && _currentIndex == 0) {
+                // Refresh dashboard on re-tap
+              }
+              setState(() => _currentIndex = index);
+            },
+            height: 68,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            destinations: <Widget>[
+              NavigationDestination(
+                icon: const Icon(Icons.dashboard_outlined, size: 24),
+                selectedIcon: const Icon(Icons.dashboard, size: 24),
+                label: l10n.get('dashboard'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.receipt_long_outlined, size: 24),
+                selectedIcon: const Icon(Icons.receipt_long, size: 24),
+                label: l10n.get('bills'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.analytics_outlined, size: 24),
+                selectedIcon: const Icon(Icons.analytics, size: 24),
+                label: l10n.get('reports'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.settings_outlined, size: 24),
+                selectedIcon: const Icon(Icons.settings, size: 24),
+                label: l10n.get('settings'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -93,8 +152,9 @@ class DashboardScreen extends StatelessWidget {
           context.read<TenantBloc>().add(LoadTenants());
           context.read<BillBloc>().add(LoadBills());
         },
-        child: CustomScrollView(
-          slivers: <Widget>[
+        child: CenteredContent(
+          child: CustomScrollView(
+            slivers: <Widget>[
             // Header
             SliverToBoxAdapter(
               child: Padding(
@@ -152,13 +212,15 @@ class DashboardScreen extends StatelessWidget {
                       }
                     }
 
+                    final int columns = adaptiveGridCount(context);
+                    final double tileHeight = columns > 3 ? 95.0 : 110.0;
                     return GridView.count(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
+                      crossAxisCount: columns,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 1.3,
+                      childAspectRatio: columns > 3 ? 1.1 : 1.3,
                       children: <Widget>[
                         _StatTile(
                           icon: Icons.home_work_outlined,
@@ -272,9 +334,11 @@ class DashboardScreen extends StatelessWidget {
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (BuildContext context, int index) {
                         final BillModel bill = recentBills[index];
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: BillCard(bill: bill),
+                        return CenteredContent(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: BillCard(bill: bill),
+                          ),
                         );
                       },
                     ),
@@ -313,6 +377,7 @@ class DashboardScreen extends StatelessWidget {
 
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
+          ),
         ),
       ),
     );
@@ -334,55 +399,70 @@ class _StatTile extends StatelessWidget {
   final int iconBg;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Color(iconBg)),
-      boxShadow: <BoxShadow>[
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.03),
-          offset: const Offset(0, 2),
-          blurRadius: 8,
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        Container(
-          width: 36,
-          height: 36,
+  Widget build(BuildContext context) {
+    final double w = MediaQuery.sizeOf(context).width;
+    final bool wide = w >= ResponsiveBreakpoints.tablet;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double iconSize = constraints.maxWidth > 100 ? 18 : 14;
+        final double iconBox = constraints.maxWidth > 100 ? 36 : 30;
+        final double valueSize = constraints.maxWidth > 100 ? 18 : 13;
+        final double labelSize = constraints.maxWidth > 100 ? 11 : 9;
+        final double pad = constraints.maxWidth > 100 ? 12 : 8;
+        final double radius = constraints.maxWidth > 100 ? 16 : 12;
+
+        return Container(
+          padding: EdgeInsets.all(pad),
           decoration: BoxDecoration(
-            color: Color(iconBg),
-            borderRadius: BorderRadius.circular(10),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(color: Color(iconBg)),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                offset: const Offset(0, 2),
+                blurRadius: 8,
+              ),
+            ],
           ),
-          child: Icon(icon, color: color, size: 18),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: color,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Container(
+                width: iconBox,
+                height: iconBox,
+                decoration: BoxDecoration(
+                  color: Color(iconBg),
+                  borderRadius: BorderRadius.circular(radius * 0.6),
+                ),
+                child: Icon(icon, color: color, size: iconSize),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: valueSize,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: labelSize,
+                  color: const Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: Color(0xFF64748B),
-            fontWeight: FontWeight.w500,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    ),
-  );
+        );
+      },
+    );
+  }
 }

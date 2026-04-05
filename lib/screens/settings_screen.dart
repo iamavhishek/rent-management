@@ -5,6 +5,7 @@ import 'package:rent_bill_maker/bloc/language/language_cubit.dart';
 import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
+import 'package:rent_bill_maker/utils/responsive.dart';
 import 'package:rent_bill_maker/utils/theme.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -14,8 +15,9 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final L10n l10n = L10n.of(context);
 
-    return SafeArea(
-      child: ListView(
+    return CenteredContent(
+      child: SafeArea(
+        child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: <Widget>[
           Text(
@@ -140,6 +142,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

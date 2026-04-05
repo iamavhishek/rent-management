@@ -5,6 +5,7 @@ import 'package:rent_bill_maker/bloc/bill/bill_bloc.dart';
 import 'package:rent_bill_maker/bloc/settings/settings_cubit.dart';
 import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
+import 'package:rent_bill_maker/utils/responsive.dart';
 import 'package:rent_bill_maker/widgets/bill_card.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -30,10 +31,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final L10n l10n = L10n.of(context);
     final bool isBS = context.watch<SettingsCubit>().state == DateSystem.bs;
     return SafeArea(
-      child: Column(
-        children: <Widget>[
-          // Header
-          Padding(
+      child: CenteredContent(
+        child: Column(
+          children: <Widget>[
+            // Header
+            Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,6 +268,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

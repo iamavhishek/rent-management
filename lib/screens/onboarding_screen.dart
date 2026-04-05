@@ -9,6 +9,7 @@ import 'package:rent_bill_maker/models/bill/bill_model.dart';
 import 'package:rent_bill_maker/models/property/property_model.dart';
 import 'package:rent_bill_maker/models/tenant/tenant_model.dart';
 import 'package:rent_bill_maker/utils/l10n.dart';
+import 'package:rent_bill_maker/utils/responsive.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -75,29 +76,31 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         ),
       ),
       child: SafeArea(
-        child: Column(
-          children: <Widget>[
-            const SizedBox(height: 20),
-            // Step indicator
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: _StepIndicator(currentStep: _currentPage, totalSteps: 4),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: PageView(
-                  controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (int page) =>
-                      setState(() => _currentPage = page),
-                  children: <Widget>[
-                    _LanguageStep(onNext: _nextPage),
-                    _CalendarStep(onNext: _nextPage),
-                    _PropertyStep(onNext: _nextPage, onSkip: _nextPage),
-                    _TenantStep(
-                      onNext: _completeOnboarding,
+        child: CenteredContent(
+          breakpoint: ResponsiveBreakpoints.tablet,
+          child: Column(
+            children: <Widget>[
+              const SizedBox(height: 20),
+              // Step indicator
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: _StepIndicator(currentStep: _currentPage, totalSteps: 4),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (int page) =>
+                        setState(() => _currentPage = page),
+                    children: <Widget>[
+                      _LanguageStep(onNext: _nextPage),
+                      _CalendarStep(onNext: _nextPage),
+                      _PropertyStep(onNext: _nextPage, onSkip: _nextPage),
+                      _TenantStep(
+                        onNext: _completeOnboarding,
                       onSkip: _completeOnboarding,
                     ),
                   ],
@@ -105,6 +108,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               ),
             ),
           ],
+        ),
         ),
       ),
     ),

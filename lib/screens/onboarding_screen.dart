@@ -77,7 +77,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       ),
       child: SafeArea(
         child: CenteredContent(
-          breakpoint: ResponsiveBreakpoints.tablet,
           child: Column(
             children: <Widget>[
               const SizedBox(height: 20),
@@ -101,14 +100,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       _PropertyStep(onNext: _nextPage, onSkip: _nextPage),
                       _TenantStep(
                         onNext: _completeOnboarding,
-                      onSkip: _completeOnboarding,
-                    ),
-                  ],
+                        onSkip: _completeOnboarding,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     ),
